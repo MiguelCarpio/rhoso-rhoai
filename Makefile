@@ -1,14 +1,17 @@
 
 PULL_SECRET ?= ~/pull-secret
 
-EDPM_CPUS ?= 32
-EDPM_RAM ?= 128
+EDPM_CPUS ?= 36
+EDPM_RAM ?= 144
 EDPM_DISK ?= 640
+
+PROXY_USER ?= rhoai
+PROXY_PASSWORD ?= 12345678
 
 OPENSHIFT_RELEASE ?= 4.18
 OPENSHIFT_INSTALLER ?= 
-OPENSHIFT_INSTALLDIR ?= 
-OPENSHIFT_INSTALLCONFIG ?= 
+OPENSHIFT_INSTALLCONFIG ?=
+CLUSTER_NAME ?= rhoai
 
 ##@ PREREQUISITES
 .PHONY: prerequisites
@@ -47,28 +50,19 @@ deploy_shiftstack: ## Deploy OpenShift on OpenStack
 	$(info Creating OpenStack Networks, Flavors and Quotas)
 	@scripts/openstack_prerequisites.sh $(EDPM_CPUS) $(EDPM_RAM) $(EDPM_DISK)
 	$(info Setting firewall permissions)
-	@scripts/firewall.sh
+	@scripts/firewall_permissions.sh
 	$(info Deploying proxy server)
-	@scripts/proxy.sh
+	@scripts/proxy_setup.sh $(PROXY_USER) $(PROXY_PASSWORD)
+	$(info Making the OpenShift installation directory at clusters/$(CLUSTER_NAME))
+	@mkdir -p clusters/$(CLUSTER_NAME)
 ifeq (,$(wildcard $(OPENSHIFT_INSTALLER)))
-	$(info Downloading the OpenShift Installer $(OPENSHIFT_RELEASE))
-	$(eval OPENSHIFT_INSTALLER := installer/bin/openshift-install)
-	@git clone https://github.com/openshift/installer.git
-	@cd installer && git remote update && git checkout origin/release-$(OPENSHIFT_RELEASE)
-	@cd installer && hack/build.sh
-	@cd installer && bin/openshift-install version
-endif
-ifeq (,$(wildcard $(OPENSHIFT_INSTALLDIR)))
-	$(info Making the OpenShift Cluster directory at $(OPENSHIFT_INSTALLDIR))
-	$(eval OPENSHIFT_INSTALLDIR := clusters/rhoai)
-	@mkdir -p $(OPENSHIFT_INSTALLDIR)
+	$(error Please go to https://amd64.ocp.releases.ci.openshift.org/ and download the openshift installer)
 endif
 ifeq (,$(wildcard $(OPENSHIFT_INSTALLCONFIG)))
-	$(info Making the OpenShift Cluster Install Configuration at $(OPENSHIFT_INSTALLCONFIG))
-	@scripts/build_installconfig.sh $(OPENSHIFT_INSTALLDIR)
+	$(info Making the OpenShift Cluster Install Configuration at clusters/$(CLUSTER_NAME)/install-config.yaml)
+	@cd scripts && ./build_installconfig.sh ../$(OPENSHIFT_INSTALLER) $(PULL_SECRET) $(CLUSTER_NAME) $(PROXY_USER) $(PROXY_PASSWORD)
 else
-	@cp $(OPENSHIFT_INSTALLCONFIG) $(OPENSHIFT_INSTALLDIR)/
+	@cp $(OPENSHIFT_INSTALLCONFIG) clusters/$(CLUSTER_NAME)/
 endif
 	$(info Installing OpenShift $(OPENSHIFT_RELEASE))
-	@mkdir -p $(OPENSHIFT_INSTALLDIR)
-	@$(OPENSHIFT_INSTALLER) --log-level debug --dir $(OPENSHIFT_INSTALLDIR) create cluster
+	@$(OPENSHIFT_INSTALLER) --log-level debug --dir clusters/$(CLUSTER_NAME) create cluster
