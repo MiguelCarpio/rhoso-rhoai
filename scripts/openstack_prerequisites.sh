@@ -1,10 +1,16 @@
 #!/bin/bash
 
-set -x
+set -ex
 
 VCPU=$1
 RAM_MB=$((${2} * 1024))
 GIGABYTES=$3
+
+if ! which openstack > /dev/null 2>&1; then
+    echo "openstack command not found, installing python-openstackclient..."
+    sudo dnf -y install pip
+    pip install python-openstackclient
+fi
 
 echo "Getting the OpenStack Credentials"
 

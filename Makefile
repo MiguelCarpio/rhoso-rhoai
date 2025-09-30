@@ -66,6 +66,19 @@ else
 endif
 	@$(OPENSHIFT_INSTALLER) --log-level debug --dir clusters/$(CLUSTER_NAME) create cluster
 
+##@ DEPLOY GPU WORKER NODES
+.PHONY: deploy_worker_gpu
+deploy_worker_gpu: ## Create a new MachineSet for the GPU workers
+	$(info Creating a new MachineSet for the GPU workers)
+ifeq (,$(wildcard clusters/$(CLUSTER_NAME)/auth/kubeconfig))
+	$(error The kubeconfig is missing, it should be at clusters/$(CLUSTER_NAME)/auth/kubeconfig)
+endif
+ifeq (,$(shell which oc))
+	$(error oc command not found, please go to https://amd64.ocp.releases.ci.openshift.org/ and download the OpenShift Client)
+endif
+	@cd scripts && ./create_worker_gpu.sh $(CLUSTER_NAME)
+	@cd scripts && ./install_gpu_operators.sh $(CLUSTER_NAME)
+
 ##@ CLEAN SHIFTSTACK
 .PHONY: clean_shiftstack
 clean_shiftstack: ## Clean OpenShift on RHOSO cluster
