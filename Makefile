@@ -1,5 +1,6 @@
 
 PULL_SECRET ?= ~/pull-secret
+SSH_PUB_KEY ?= ~/.ssh/id_rsa.pub
 
 EDPM_CPUS ?= 36
 EDPM_RAM ?= 144
@@ -59,7 +60,7 @@ ifeq (,$(wildcard $(OPENSHIFT_INSTALLER)))
 endif
 ifeq (,$(wildcard $(OPENSHIFT_INSTALLCONFIG)))
 	$(info Making the OpenShift Cluster Install Configuration at clusters/$(CLUSTER_NAME)/install-config.yaml)
-	@cd scripts && ./build_installconfig.sh ../$(OPENSHIFT_INSTALLER) $(PULL_SECRET) $(CLUSTER_NAME) $(PROXY_USER) $(PROXY_PASSWORD)
+	@cd scripts && ./build_installconfig.sh ../$(OPENSHIFT_INSTALLER) $(PULL_SECRET) $(CLUSTER_NAME) $(PROXY_USER) $(PROXY_PASSWORD) $(SSH_PUB_KEY)
 else
 	@cp $(OPENSHIFT_INSTALLCONFIG) clusters/$(CLUSTER_NAME)/
 endif
