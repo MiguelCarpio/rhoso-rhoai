@@ -56,7 +56,7 @@ deploy_shiftstack: ## Deploy OpenShift on OpenStack
 	$(info Making the OpenShift installation directory at clusters/$(CLUSTER_NAME))
 	@mkdir -p clusters/$(CLUSTER_NAME)
 ifeq (,$(wildcard $(OPENSHIFT_INSTALLER)))
-	$(error Please go to https://amd64.ocp.releases.ci.openshift.org/ and download the openshift installer)
+	$(error Please go to https://amd64.ocp.releases.ci.openshift.org/ and download the openshift installer, then run this target with "OPENSHIFT_INSTALLER=openshiftInstallerPath make deploy_shiftstack")
 endif
 ifeq (,$(wildcard $(OPENSHIFT_INSTALLCONFIG)))
 	$(info Making the OpenShift Cluster Install Configuration at clusters/$(CLUSTER_NAME)/install-config.yaml)
@@ -66,3 +66,35 @@ else
 endif
 	$(info Installing OpenShift $(OPENSHIFT_RELEASE))
 	@$(OPENSHIFT_INSTALLER) --log-level debug --dir clusters/$(CLUSTER_NAME) create cluster
+
+##@ CLEAN SHIFTSTACK
+.PHONY: clean_shiftstack
+clean_shiftstack: ## Clean OpenShift on RHOSO cluster
+	$(info Destroying the OpenShift cluster)
+ifeq (,$(wildcard $(OPENSHIFT_INSTALLER)))
+	$(error OPENSHIFT_INSTALLER not found, run this target with "OPENSHIFT_INSTALLER=openshiftInstallerPath make clean_shiftstack")
+endif
+ifeq (,$(wildcard clusters/$(CLUSTER_NAME)))
+	$(error Cluster directory clusters/$(CLUSTER_NAME) not found)
+endif
+	@$(OPENSHIFT_INSTALLER) --log-level debug --dir clusters/$(CLUSTER_NAME) destroy cluster
+
+##@ CLEAN RHOSO DATA PLANE
+.PHONY: clean_rhoso_dataplane
+clean_rhoso_dataplane: ## Delete the RHOSO EDPM node
+	$(info Deleting the EDPM node)
+ifeq (,$(wildcard rhoso-rhelai))
+	$(error rhoso-rhelai is missing, the CRC kubeconfig is missing)
+else
+	@make -C rhoso-rhelai/nested-passthrough cleanup_edpm
+endif
+
+##@ CLEAN RHOSO CONTROL PLANE
+.PHONY: clean_rhoso_controlplane
+clean_rhoso_controlplane: ## Delete the RHOSO workload and the OCP host cluster
+	$(info Deleting the OCP cluster)
+ifeq (,$(wildcard rhoso-rhelai))
+	$(error rhoso-rhelai is missing, the CRC kubeconfig is missing)
+else
+	@make -C rhoso-rhelai/nested-passthrough cleanup_controlplane
+endif
