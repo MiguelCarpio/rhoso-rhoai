@@ -8,7 +8,6 @@ EDPM_DISK ?= 640
 PROXY_USER ?= rhoai
 PROXY_PASSWORD ?= 12345678
 
-OPENSHIFT_RELEASE ?= 4.18
 OPENSHIFT_INSTALLER ?= 
 OPENSHIFT_INSTALLCONFIG ?=
 CLUSTER_NAME ?= rhoai
@@ -64,7 +63,6 @@ ifeq (,$(wildcard $(OPENSHIFT_INSTALLCONFIG)))
 else
 	@cp $(OPENSHIFT_INSTALLCONFIG) clusters/$(CLUSTER_NAME)/
 endif
-	$(info Installing OpenShift $(OPENSHIFT_RELEASE))
 	@$(OPENSHIFT_INSTALLER) --log-level debug --dir clusters/$(CLUSTER_NAME) create cluster
 
 ##@ CLEAN SHIFTSTACK
