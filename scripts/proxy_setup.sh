@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+set -ex
 
 PROXY_USER=$1
 PROXY_PASSWORD=$2
@@ -27,3 +27,5 @@ EOF
 sudo htpasswd -bBc /etc/squid/htpasswd $PROXY_USER $PROXY_PASSWORD
 
 sudo systemctl start squid
+
+sudo systemctl status squid --no-pager || exit 1
