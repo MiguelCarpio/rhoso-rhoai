@@ -2,19 +2,19 @@
 
 set -ex
 
-export OPENSHIFT_INSTALLER=$1
-export PULL_SECRET="`cat $2 | jq -c`"
-export CLUSTER_NAME=$3
-export PROXY_USER=$4
-export PROXY_PASSWORD=$5
-export BASE_DOMAIN="shiftstack.test"
-export SSH_PUB_KEY="`cat $HOME/.ssh/id_rsa.pub`"
-export MASTER_COUNT=3
-export WORKER_COUNT=1
-export OPENSHIFT_NETWORKTYPE="OVNKubernetes"
-export OPENSTACK_FLAVOR="master"
-export OPENSTACK_WORKER_FLAVOR="worker"
-export OPENSTACK_EXTERNAL_NETWORK="public"
+OPENSHIFT_INSTALLER=$1
+PULL_SECRET="`cat $2 | jq -c`"
+CLUSTER_NAME=$3
+PROXY_USER=$4
+PROXY_PASSWORD=$5
+BASE_DOMAIN="shiftstack.test"
+SSH_PUB_KEY="`cat $HOME/.ssh/id_rsa.pub`"
+MASTER_COUNT=3
+WORKER_COUNT=1
+OPENSHIFT_NETWORKTYPE="OVNKubernetes"
+OPENSTACK_FLAVOR="master"
+OPENSTACK_WORKER_FLAVOR="worker"
+OPENSTACK_EXTERNAL_NETWORK="public"
 export OS_CLOUD=default
 
 ARTIFACT_DIR=../clusters/${CLUSTER_NAME}
