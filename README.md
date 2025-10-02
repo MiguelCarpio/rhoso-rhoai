@@ -68,22 +68,10 @@ We need to write `blacklist <driver name>` in file
 
 Depending on the card it will be a different driver name:
 
-- For NVIDIA GPUs:
+For NVIDIA GPUs:
 
 ```
 echo -e "blacklist nouveau\nblacklist nvidia*" | sudo tee -a /etc/modprobe.d/blacklist.conf
-```
-
-- For AMD GPUs:
-
-```
-echo -e "blacklist amdgpu\nblacklist radeon" | sudo tee -a /etc/modprobe.d/blacklist.conf
-```
-
-- For Intel GPUs:
-
-```
-echo "blacklist i915" | sudo tee -a /etc/modprobe.d/blacklist.conf
 ```
 
 A description on how to do it on some complex blacklisting scenarios can be
@@ -143,6 +131,21 @@ We need an available and healthy OpenShift cluster. To deploy OpenShift on RHOSO
 ```bash
 PULL_SECRET=~/.config/openstack/pull-secret.txt OPENSHIFT_INSTALLER=/usr/local/bin/openshift-install make deploy_shiftstack
 ```
+
+ShiftStack deployment needs 3 masters, 1 bootstrap, and at least 1 worker. In this deploy, masters and the bootstrap share the same flavor; the worker must accomplish the [minimum requirements](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/2.8/html/installing_and_uninstalling_openshift_ai_self-managed/installing-and-deploying-openshift-ai_install) for supporting the OpenShift AI Operators. Besides, the worker GPU must accomplish the minimum requirement plus additional cluster resources to ensure that OpenShift AI is usable and supports the accelerated data plane components. Therefore, these are the minimum requirements for deploying RHOAI on RHOSO for development and test purposes. 
+
+<b style="font-weight:normal;" id="docs-internal-guid-a3f90021-7fff-d9b4-408b-558d359f25ef"><div dir="ltr" style="margin-left:0pt;" align="left">
+NODE | COUNT | FLAVOR | CPU | RAM
+-- | -- | -- | -- | --
+master | 3 | master | 12 | 48
+boostrap | 1 | master | 4 | 16
+worker | 1 | worker | 8 | 32
+worker GPU | 1 | worker_gpu | 16 | 64
+TOTAL | | | 40 | 160
+</div></b>
+
+> [!NOTE] 
+> The Red Hat OpenShift AI (RHOAI) Operators will deploy their management components (controllers, dashboard, core services) on both workers, but they will only deploy the accelerated data plane components (like the NVIDIA stack) on the node with the GPU.
 
 ## Deploying Worker GPU Node and GPU Operators
 
