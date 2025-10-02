@@ -2,8 +2,8 @@
 PULL_SECRET ?= ~/pull-secret
 SSH_PUB_KEY ?= ~/.ssh/id_rsa.pub
 
-EDPM_CPUS ?= 36
-EDPM_RAM ?= 144
+EDPM_CPUS ?= 40
+EDPM_RAM ?= 160
 EDPM_DISK ?= 640
 
 PROXY_USER ?= rhoai
