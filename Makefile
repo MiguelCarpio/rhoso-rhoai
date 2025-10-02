@@ -79,6 +79,18 @@ endif
 	@cd scripts && ./create_worker_gpu.sh $(CLUSTER_NAME)
 	@cd scripts && ./install_gpu_operators.sh $(CLUSTER_NAME)
 
+##@ DEPLOY OPENSHIFT AI
+.PHONY: deploy_rhoai
+deploy_rhoai: ## Deploy OpenShift AI
+	$(info Installing OpenShift AI Operators)
+ifeq (,$(wildcard clusters/$(CLUSTER_NAME)/auth/kubeconfig))
+	$(error The kubeconfig is missing, it should be at clusters/$(CLUSTER_NAME)/auth/kubeconfig)
+endif
+ifeq (,$(shell which oc))
+	$(error oc command not found, please go to https://amd64.ocp.releases.ci.openshift.org/ and download the OpenShift Client)
+endif
+	@cd scripts && ./install_rhoai_operators.sh $(CLUSTER_NAME)
+
 ##@ CLEAN SHIFTSTACK
 .PHONY: clean_shiftstack
 clean_shiftstack: ## Clean OpenShift on RHOSO cluster
