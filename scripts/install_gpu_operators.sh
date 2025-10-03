@@ -41,8 +41,8 @@ spec:
   sourceNamespace: openshift-marketplace
 EOF
 
+echo "Waiting for NFD deployment to be available..."
 sleep 30
-
 ${OPENSHIFT_CLIENT} wait --for=condition=Available --timeout=5m deployment/nfd-controller-manager -n openshift-nfd
 
 cat << EOF | ${OPENSHIFT_CLIENT} apply -f -
@@ -54,10 +54,9 @@ metadata:
 spec: {}
 EOF
 
+echo "Waiting for NFD instance to be available..."
 sleep 30
-
 ${OPENSHIFT_CLIENT} wait pod --all --for=condition=Ready -n openshift-nfd --timeout=5m
-
 ${OPENSHIFT_CLIENT} rollout status daemonset/nfd-worker -n openshift-nfd --watch --timeout=5m
 
 echo "Deploying the NVIDIA Operator"
@@ -94,9 +93,8 @@ spec:
   startingCSV: ${NVIDIA_STARTINGCSV}
 EOF
 
-sleep 30
-
 echo "Waiting for GPU operator deployment to be available..."
+sleep 30
 ${OPENSHIFT_CLIENT} wait --for=condition=Available --timeout=5m deployment/gpu-operator -n nvidia-gpu-operator
 
 echo "Waiting for GPU operator CSV to be ready..."
