@@ -120,16 +120,17 @@ To deploy the control plane you'll need a `pull-secret` from
 The targets for each of these phases:
 
 ```bash
-PULL_SECRET=~/.config/openstack/pull-secret.txt make deploy_rhoso_controlplane
-PULL_SECRET=~/.config/openstack/pull-secret.txt make deploy_rhoso_dataplane
+make deploy_rhoso_controlplane
+make deploy_rhoso_dataplane
 ```
 
 ## Deploying ShiftStack
 
-We need an available and healthy OpenShift cluster. To deploy OpenShift on RHOSO you'll need the `pull-secret` and the `openshit-installer`. You can get the installer from  https://amd64.ocp.releases.ci.openshift.org/ choose a [supported OCP version](https://access.redhat.com/support/policy/updates/rhoai-sm/lifecycle)
+To deploy OpenShift on RHOSO you'll need the `pull-secret`, the `openshift-install` and the `oc` client. The `pull-secret` file must exist as
+`~/pull-secret`, the OpenShift installer and the client must be found in the `$PATH`. However, you can set the `PULL_SECRET` env var with the `pull-secret` location. Regarding the `openshift-install` and `oc`, you can get the installer and client from https://amd64.ocp.releases.ci.openshift.org/, choose a [supported OCP version](https://access.redhat.com/support/policy/updates/rhoai-sm/lifecycle), and set the `OPENSHIFT_INSTALLER` and `OPENSHIFT_CLIENT` env vars with the `openshift-install` and `oc` location.
 
 ```bash
-PULL_SECRET=~/.config/openstack/pull-secret.txt OPENSHIFT_INSTALLER=/usr/local/bin/openshift-install make deploy_shiftstack
+make deploy_shiftstack
 ```
 
 ShiftStack deployment needs 3 masters, 1 bootstrap, and at least 1 worker. In this deploy, masters and the bootstrap share the same flavor; the worker must accomplish the [minimum requirements](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/2.8/html/installing_and_uninstalling_openshift_ai_self-managed/installing-and-deploying-openshift-ai_install) for supporting the OpenShift AI Operators. Besides, the worker GPU must accomplish the minimum requirement plus additional cluster resources to ensure that OpenShift AI is usable and supports the accelerated data plane components. Therefore, these are the minimum requirements for deploying RHOAI on RHOSO for development and test purposes. 
@@ -149,12 +150,12 @@ TOTAL | | | 40 | 160
 
 ## Deploying Worker GPU Node and GPU Operators
 
-A new MachineSet for the GPU workers is needed to support the accelerated data plane components. To create a Worker node with a GPU by PCI passthrough, you need a flavor with `pci_passthrough`, `pci_numa_affinity_policy` and `hide_hypervisor_id` properties. The `worker_gpu` flavor was already created by `deploy_shiftstack`
+A new MachineSet for the GPU worker is needed to support the accelerated data plane components. To create a worker node with a GPU by PCI passthrough, you'll need a flavor with `pci_passthrough`, `pci_numa_affinity_policy` and `hide_hypervisor_id` properties. The `worker_gpu` flavor is already created by the `deploy_shiftstack` target.
 
 ```
 make deploy_worker_gpu
 ```
-This target also verifies that the GPU card is present on the worker, deploys the GPU Operators, verifies the GPU operator labelled the worker node and creates a GPU operator verification job.
+This target also verifies that the GPU card is present on the GPU worker, deploys the GPU operators, verifies the GPU operator labelled the worker node and creates a GPU operator verification job.
 
 ```
 tee verify-cuda-vectoradd.yaml << EOF
@@ -238,11 +239,12 @@ home directory, you may use something like this:
 ```
 EDPM_CPUS=96 EDPM_RAM=256 PULL_SECRET=~/.config/openstack/pull-secret.txt make deploy_rhoso_dataplane
 ```
-If you want to change the default ShiftStack cluster name or deploy a custom OpenShift configuration.
+If you want to set the `openshift-install` location and change the default ShiftStack cluster name:
 ```
-OPENSHIFT_INSTALLCONFIG=custom-ocp.yaml CLUSTER_NAME=custom-ocp-name OPENSHIFT_INSTALLER=/usr/local/bin/openshift-install make deploy_shiftstack
+OPENSHIFT_INSTALLER=openshift-install CLUSTER_NAME=custom-ocp-name make deploy_shiftstack
 ```
-Or, if you want to use a specific ssh pub key for the OpenShift installation. This key will be used for access to the bootstrap machine and debugging it in case of failure.
+By default, the `deploy_shiftstack` target uses the `~/.ssh/id_rsa.pub` SSH pub key, if you want to use a specific key for the OpenShift installation, you can set the custom key location with `SSH_PUB_KEY` env var. This key will be used for access to the bootstrap machine and debugging it in case of failure:
 ```
-SSH_PUB_KEY=~/.ssh/custom_id_rsa.pub OPENSHIFT_INSTALLER=/usr/local/bin/openshift-install make deploy_shiftstack
+SSH_PUB_KEY=~/.ssh/custom_id_rsa.pub make deploy_shiftstack
+ssh -i ~/.ssh/custom_id_rsa.pub core@${BOOTSTRAP_FLOATING_IP}
 ```
