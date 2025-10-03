@@ -14,34 +14,28 @@ OPENSHIFT_INSTALLCONFIG ?=
 CLUSTER_NAME ?= rhoai
 
 ##@ PREREQUISITES
-.PHONY: prerequisites
-prerequisites: ## Installs basic tools
-	@sudo dnf -y install gcc-c++ zip git make pciutils squid 
+.PHONY: ensure_rhoso_rhelai
+ensure_rhoso_rhelai:
 ifeq (,$(wildcard rhoso-rhelai))
 	@git clone https://github.com/rhos-vaf/rhoso-rhelai.git
+	@make -C rhoso-rhelai/nested-passthrough download_tools
 else
 	@cd rhoso-rhelai && git remote update && git checkout origin/main
 endif
-	@make -C rhoso-rhelai/nested-passthrough download_tools validate_host
+
+.PHONY: prerequisites
+prerequisites: ensure_rhoso_rhelai ## Installs basic tools & Validate GPU host
+	@sudo dnf -y install gcc-c++ zip git make pciutils squid
+	@make -C rhoso-rhelai/nested-passthrough validate_host
 
 ##@ DEPLOY RHOSO CONTROL PLANE
 .PHONY: deploy_rhoso_controlplane
-deploy_rhoso_controlplane: ## Deploy OCP cluster using CRC, deploy OSP operators, and deploy the OpenStack Control Plane
-ifeq (,$(wildcard rhoso-rhelai))
-	@git clone https://github.com/rhos-vaf/rhoso-rhelai.git
-else
-	@cd rhoso-rhelai && git remote update && git checkout origin/main
-endif
+deploy_rhoso_controlplane: prerequisites ## Deploy OCP cluster using CRC, deploy OSP operators, and deploy the OpenStack Control Plane
 	@make -C rhoso-rhelai/nested-passthrough DEPLOY_CINDER=true PULL_SECRET=$(PULL_SECRET) deploy_controlplane
 
 ##@ DEPLOY RHOSO DATA PLANE
 .PHONY: deploy_rhoso_dataplane
-deploy_rhoso_dataplane: ## Deploy an EDPM node with PCI passthrough
-ifeq (,$(wildcard rhoso-rhelai))
-	@git clone https://github.com/rhos-vaf/rhoso-rhelai.git
-else
-	@cd rhoso-rhelai && git remote update && git checkout origin/main
-endif
+deploy_rhoso_dataplane: ensure_rhoso_rhelai ## Deploy an EDPM node with PCI passthrough
 	@make -C rhoso-rhelai/nested-passthrough EDPM_CPUS=$(EDPM_CPUS) EDPM_RAM=$(EDPM_RAM) EDPM_DISK=$(EDPM_DISK) PULL_SECRET=$(PULL_SECRET) deploy_edpm
 
 ##@ DEPLOY SHIFTSTACK
@@ -105,20 +99,12 @@ endif
 
 ##@ CLEAN RHOSO DATA PLANE
 .PHONY: clean_rhoso_dataplane
-clean_rhoso_dataplane: ## Delete the RHOSO EDPM node
+clean_rhoso_dataplane: ensure_rhoso_rhelai ## Delete the RHOSO EDPM node
 	$(info Deleting the EDPM node)
-ifeq (,$(wildcard rhoso-rhelai))
-	$(error rhoso-rhelai is missing, the CRC kubeconfig is missing)
-else
 	@make -C rhoso-rhelai/nested-passthrough cleanup_edpm
-endif
 
 ##@ CLEAN RHOSO CONTROL PLANE
 .PHONY: clean_rhoso_controlplane
-clean_rhoso_controlplane: ## Delete the RHOSO workload and the OCP host cluster
+clean_rhoso_controlplane: ensure_rhoso_rhelai ## Delete the RHOSO workload and the OCP host cluster
 	$(info Deleting the OCP cluster)
-ifeq (,$(wildcard rhoso-rhelai))
-	$(error rhoso-rhelai is missing, the CRC kubeconfig is missing)
-else
 	@make -C rhoso-rhelai/nested-passthrough cleanup_controlplane
-endif
