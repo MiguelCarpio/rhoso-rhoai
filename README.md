@@ -208,7 +208,10 @@ make deploy_rhoai
 ```
 
 Finally, it shows a message to access the RHOAI dashboard URL. Like this:
-`Access the RHOAI dashboard https://rhods-dashboard-redhat-ods-applications.apps.rhoai.shiftstack.test:8443`
+`Access the RHOAI dashboard https://rhods-dashboard-redhat-ods-applications.apps.rhoai.shiftstack.test`
+
+> [!IMPORTANT] 
+> You must identify the worker where the router resource is allocated, you can use the following command line `oc get pods -n openshift-ingress -o wide`. Then, you can add a floating ip on that worker instance. Finally, update your `/etc/host` and access the OpenShift AI URL. 
 
 # Customization
 

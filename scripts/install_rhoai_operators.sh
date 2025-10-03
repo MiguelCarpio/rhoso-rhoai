@@ -145,5 +145,4 @@ ${OPENSHIFT_CLIENT} wait --timeout=10m DataScienceCluster default-dsc --for json
 echo "Go to the RHOAI dashboard URL"
 ${OPENSHIFT_CLIENT} get route -n redhat-ods-applications
 RHOAI_HOST=`${OPENSHIFT_CLIENT} get route -n redhat-ods-applications -o jsonpath='{.items[0].spec.host}'`
-RHOAI_PORT=`${OPENSHIFT_CLIENT} get route -n redhat-ods-applications -o jsonpath='{.items[0].spec.port.targetPort}'`
-echo "Access the RHOAI dashboard https://${RHOAI_HOST}:${RHOAI_PORT}"
+echo "Access the RHOAI dashboard https://${RHOAI_HOST}"
