@@ -139,7 +139,7 @@ ShiftStack deployment needs 3 masters, 1 bootstrap, and at least 1 worker. In th
 NODE | COUNT | FLAVOR | CPU | RAM
 -- | -- | -- | -- | --
 master | 3 | master | 12 | 48
-boostrap | 1 | master | 4 | 16
+bootstrap | 1 | master | 4 | 16
 worker | 1 | worker | 8 | 32
 worker GPU | 1 | worker_gpu | 16 | 64
 TOTAL | | | 40 | 160
