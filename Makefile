@@ -1,6 +1,6 @@
 
-PULL_SECRET ?= ~/pull-secret
-SSH_PUB_KEY ?= ~/.ssh/id_rsa.pub
+PULL_SECRET ?= $(HOME)/pull-secret
+SSH_PUB_KEY ?= $(HOME)/.ssh/id_rsa.pub
 
 EDPM_CPUS ?= 40
 EDPM_RAM ?= 160
@@ -9,7 +9,8 @@ EDPM_DISK ?= 640
 PROXY_USER ?= rhoai
 PROXY_PASSWORD ?= 12345678
 
-OPENSHIFT_INSTALLER ?= 
+OPENSHIFT_INSTALLER ?= $(shell which openshift-installer 2>/dev/null)
+OPENSHIFT_CLIENT ?= $(shell which oc 2>/dev/null)
 OPENSHIFT_INSTALLCONFIG ?=
 CLUSTER_NAME ?= rhoai
 
@@ -41,20 +42,20 @@ deploy_rhoso_dataplane: ensure_rhoso_rhelai ## Deploy an EDPM node with PCI pass
 ##@ DEPLOY SHIFTSTACK
 .PHONY: deploy_shiftstack
 deploy_shiftstack: ## Deploy OpenShift on OpenStack
+ifeq ($(OPENSHIFT_INSTALLER),)
+	$(error openshift-installer not found in PATH. Please go to https://amd64.ocp.releases.ci.openshift.org/ and download the openshift installer or set the OPENSHIFT_INSTALLER variable with its custom PATH)
+endif
 	$(info Creating OpenStack Networks, Flavors and Quotas)
-	@scripts/openstack_prerequisites.sh $(EDPM_CPUS) $(EDPM_RAM) $(EDPM_DISK)
+	@scripts/openstack_prerequisites.sh "$(EDPM_CPUS)" "$(EDPM_RAM)" "$(EDPM_DISK)"
 	$(info Setting firewall permissions)
 	@scripts/firewall_permissions.sh
 	$(info Deploying proxy server)
-	@scripts/proxy_setup.sh $(PROXY_USER) $(PROXY_PASSWORD)
+	@scripts/proxy_setup.sh "$(PROXY_USER)" "$(PROXY_PASSWORD)"
 	$(info Making the OpenShift installation directory at clusters/$(CLUSTER_NAME))
 	@mkdir -p clusters/$(CLUSTER_NAME)
-ifeq (,$(wildcard $(OPENSHIFT_INSTALLER)))
-	$(error Please go to https://amd64.ocp.releases.ci.openshift.org/ and download the openshift installer, then run this target with "OPENSHIFT_INSTALLER=openshiftInstallerPath make deploy_shiftstack")
-endif
 ifeq (,$(wildcard $(OPENSHIFT_INSTALLCONFIG)))
 	$(info Making the OpenShift Cluster Install Configuration at clusters/$(CLUSTER_NAME)/install-config.yaml)
-	@cd scripts && ./build_installconfig.sh ../$(OPENSHIFT_INSTALLER) $(PULL_SECRET) $(CLUSTER_NAME) $(PROXY_USER) $(PROXY_PASSWORD) $(SSH_PUB_KEY)
+	@cd scripts && ./build_installconfig.sh "../$(OPENSHIFT_INSTALLER)" "$(PULL_SECRET)" "$(CLUSTER_NAME)" "$(PROXY_USER)" "$(PROXY_PASSWORD)" "$(SSH_PUB_KEY)"
 else
 	@cp $(OPENSHIFT_INSTALLCONFIG) clusters/$(CLUSTER_NAME)/
 endif
@@ -63,35 +64,35 @@ endif
 ##@ DEPLOY GPU WORKER NODES
 .PHONY: deploy_worker_gpu
 deploy_worker_gpu: ## Create a new MachineSet for the GPU workers
+ifeq ($(OPENSHIFT_CLIENT),)
+	$(error oc not found in PATH. Please go to https://amd64.ocp.releases.ci.openshift.org/ and download the openshift client or set OPENSHIFT_CLIENT variable with its custom PATH)
+endif
 	$(info Creating a new MachineSet for the GPU workers)
 ifeq (,$(wildcard clusters/$(CLUSTER_NAME)/auth/kubeconfig))
 	$(error The kubeconfig is missing, it should be at clusters/$(CLUSTER_NAME)/auth/kubeconfig)
 endif
-ifeq (,$(shell which oc))
-	$(error oc command not found, please go to https://amd64.ocp.releases.ci.openshift.org/ and download the OpenShift Client)
-endif
-	@cd scripts && ./create_worker_gpu.sh $(CLUSTER_NAME)
-	@cd scripts && ./install_gpu_operators.sh $(CLUSTER_NAME)
+	@cd scripts && ./create_worker_gpu.sh "$(CLUSTER_NAME)" "$(OPENSHIFT_CLIENT)"
+	@cd scripts && ./install_gpu_operators.sh "$(CLUSTER_NAME)" "$(OPENSHIFT_CLIENT)"
 
 ##@ DEPLOY OPENSHIFT AI
 .PHONY: deploy_rhoai
 deploy_rhoai: ## Deploy OpenShift AI
+ifeq ($(OPENSHIFT_CLIENT),)
+	$(error oc not found in PATH. Please go to https://amd64.ocp.releases.ci.openshift.org/ and download the openshift client or set OPENSHIFT_CLIENT variable with its custom PATH)
+endif
 	$(info Installing OpenShift AI Operators)
 ifeq (,$(wildcard clusters/$(CLUSTER_NAME)/auth/kubeconfig))
 	$(error The kubeconfig is missing, it should be at clusters/$(CLUSTER_NAME)/auth/kubeconfig)
 endif
-ifeq (,$(shell which oc))
-	$(error oc command not found, please go to https://amd64.ocp.releases.ci.openshift.org/ and download the OpenShift Client)
-endif
-	@cd scripts && ./install_rhoai_operators.sh $(CLUSTER_NAME)
+	@cd scripts && ./install_rhoai_operators.sh "$(CLUSTER_NAME)" "$(OPENSHIFT_CLIENT)"
 
 ##@ CLEAN SHIFTSTACK
 .PHONY: clean_shiftstack
 clean_shiftstack: ## Clean OpenShift on RHOSO cluster
-	$(info Destroying the OpenShift cluster)
-ifeq (,$(wildcard $(OPENSHIFT_INSTALLER)))
-	$(error OPENSHIFT_INSTALLER not found, run this target with "OPENSHIFT_INSTALLER=openshiftInstallerPath make clean_shiftstack")
+ifeq ($(OPENSHIFT_INSTALLER),)
+	$(error openshift-installer not found in PATH. Please go to https://amd64.ocp.releases.ci.openshift.org/ and download the openshift installer or set the OPENSHIFT_INSTALLER variable with its custom PATH)
 endif
+	$(info Destroying the OpenShift cluster)
 ifeq (,$(wildcard clusters/$(CLUSTER_NAME)))
 	$(error Cluster directory clusters/$(CLUSTER_NAME) not found)
 endif
