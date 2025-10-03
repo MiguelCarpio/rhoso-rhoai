@@ -27,3 +27,5 @@ echo "Verifying that the GPU card is present on the worker"
 WORKER_GPU_NAME=$(${OPENSHIFT_CLIENT} get machine -n openshift-machine-api -l machine.openshift.io/cluster-api-machineset=${MACHINESET_NAME%0}1 -o jsonpath='{.items[0].metadata.name}')
 echo "Checking GPU on node: ${WORKER_GPU_NAME}"
 ${OPENSHIFT_CLIENT} debug node/${WORKER_GPU_NAME} -- bash -c 'chroot /host lspci | grep NVIDIA' || { echo "The GPU card is not present on the ${WORKER_GPU_NAME} worker node"; exit 1; }
+
+rm -f ${GPU_MACHINESET}

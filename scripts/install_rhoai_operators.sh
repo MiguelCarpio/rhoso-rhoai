@@ -14,7 +14,7 @@ fi
 
 echo "Deploying the Servicemesh Operator"
 
-tee servicemesh-operator.yaml << EOF
+cat << EOF | ${OPENSHIFT_CLIENT} apply -f -
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -28,17 +28,15 @@ spec:
   sourceNamespace: openshift-marketplace
 EOF
 
-${OPENSHIFT_CLIENT} apply -f servicemesh-operator.yaml
-
 echo "Waiting for Servicemesh Operator to be ready..."
-sleep 10
+sleep 30
 ${OPENSHIFT_CLIENT} wait --for=condition=Available --timeout=5m deployment.apps/istio-operator -n openshift-operators
 
 echo "Deploying the Serverless Operator"
 
 ${OPENSHIFT_CLIENT} create namespace openshift-serverless || true
 
-tee serverless-operator-group.yaml << EOF
+cat << EOF | ${OPENSHIFT_CLIENT} apply -f -
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
@@ -47,9 +45,7 @@ metadata:
 spec: {}
 EOF
 
-${OPENSHIFT_CLIENT} apply -f serverless-operator-group.yaml
-
-tee serverless-operator.yaml << EOF
+cat << EOF | ${OPENSHIFT_CLIENT} apply -f -
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -63,17 +59,15 @@ spec:
   sourceNamespace: openshift-marketplace
 EOF
 
-${OPENSHIFT_CLIENT} apply -f serverless-operator.yaml
-
 echo "Waiting for OpenShift Serverless Operator to be ready..."
-sleep 10
+sleep 30
 ${OPENSHIFT_CLIENT} wait --for=condition=Available --timeout=5m deployment/knative-openshift -n openshift-serverless
 
 echo "Deploying the Red Hat OpenShift AI Operator"
 
 ${OPENSHIFT_CLIENT} create namespace redhat-ods-operator || true
 
-tee rhods-operator-group.yaml << EOF
+cat << EOF | ${OPENSHIFT_CLIENT} apply -f -
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
@@ -81,9 +75,7 @@ metadata:
   namespace: redhat-ods-operator
 EOF
 
-${OPENSHIFT_CLIENT} apply -f rhods-operator-group.yaml
-
-tee rhods-operator.yaml << EOF
+cat << EOF | ${OPENSHIFT_CLIENT} apply -f -
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -97,13 +89,11 @@ spec:
   sourceNamespace: openshift-marketplace
 EOF
 
-${OPENSHIFT_CLIENT} apply -f rhods-operator.yaml
-
 echo "Waiting for RHOAI Operator to be ready..."
-sleep 10
+sleep 30
 ${OPENSHIFT_CLIENT} wait --for=condition=Available --timeout=10m deployment/rhods-operator -n redhat-ods-operator
 
-tee default-dsc.yaml << EOF
+cat << EOF | ${OPENSHIFT_CLIENT} apply -f -
 apiVersion: datasciencecluster.opendatahub.io/v1
 kind: DataScienceCluster
 metadata:
@@ -148,10 +138,8 @@ spec:
       workbenchNamespace: rhods-notebooks
 EOF
 
-${OPENSHIFT_CLIENT} apply -f default-dsc.yaml
-
 echo "Waiting for DataScience Cluster to be ready..."
-sleep 10
+sleep 30
 ${OPENSHIFT_CLIENT} wait --timeout=10m DataScienceCluster default-dsc --for jsonpath='{.status.phase}'=Ready
 
 echo "Go to the RHOAI dashboard URL"
