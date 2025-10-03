@@ -3,17 +3,18 @@
 set -ex
 
 CLUSTER_NAME=$1
+OPENSHIFT_CLIENT=$2
 export KUBECONFIG=../clusters/${CLUSTER_NAME}/auth/kubeconfig
 
 # Checking the cluster health
-if ! oc get clusterversion version -o jsonpath='{range .status.conditions[*]}{.type}={.status} {end}' | grep -E -q 'Available=True.*Progressing=False|Progressing=False.*Available=True'; then
+if ! ${OPENSHIFT_CLIENT} get clusterversion version -o jsonpath='{range .status.conditions[*]}{.type}={.status} {end}' | grep -E -q 'Available=True.*Progressing=False|Progressing=False.*Available=True'; then
   echo "Cluster is DEGRADED or UPDATING (Check 'oc get clusterversion')"
   exit 1
 fi
 
 echo "Deploying the NFD Operator"
 
-oc create namespace openshift-nfd || true
+${OPENSHIFT_CLIENT} create namespace openshift-nfd || true
 
 tee nfd-operatorgroup.yaml << EOF
 apiVersion: operators.coreos.com/v1
@@ -26,7 +27,7 @@ spec:
   - openshift-nfd
 EOF
 
-oc apply -f nfd-operatorgroup.yaml
+${OPENSHIFT_CLIENT} apply -f nfd-operatorgroup.yaml
 
 tee nfd-subscription.yaml << EOF
 apiVersion: operators.coreos.com/v1alpha1
@@ -42,9 +43,9 @@ spec:
   sourceNamespace: openshift-marketplace
 EOF
 
-oc apply -f nfd-subscription.yaml
+${OPENSHIFT_CLIENT} apply -f nfd-subscription.yaml
 
-oc wait --for=condition=Available --timeout=5m deployment/nfd-controller-manager -n openshift-nfd
+${OPENSHIFT_CLIENT} wait --for=condition=Available --timeout=5m deployment/nfd-controller-manager -n openshift-nfd
 
 tee nfd-instance.yaml << EOF
 apiVersion: nfd.openshift.io/v1
@@ -55,17 +56,17 @@ metadata:
 spec: {}
 EOF
 
-oc apply -f nfd-instance.yaml
+${OPENSHIFT_CLIENT} apply -f nfd-instance.yaml
 
 sleep 10
 
-oc wait pod --all --for=condition=Ready -n openshift-nfd --timeout=5m
+${OPENSHIFT_CLIENT} wait pod --all --for=condition=Ready -n openshift-nfd --timeout=5m
 
-oc rollout status daemonset/nfd-worker -n openshift-nfd --watch --timeout=5m
+${OPENSHIFT_CLIENT} rollout status daemonset/nfd-worker -n openshift-nfd --watch --timeout=5m
 
 echo "Deploying the NVIDIA Operator"
 
-oc create namespace nvidia-gpu-operator || true
+${OPENSHIFT_CLIENT} create namespace nvidia-gpu-operator || true
 
 tee gpu-operator-group.yaml << EOF
 apiVersion: operators.coreos.com/v1
@@ -78,11 +79,11 @@ spec:
   - nvidia-gpu-operator
 EOF
 
-oc apply -f gpu-operator-group.yaml
+${OPENSHIFT_CLIENT} apply -f gpu-operator-group.yaml
 
-NVIDIA_CHANNEL=`oc get packagemanifest gpu-operator-certified -n openshift-marketplace -o jsonpath='{.status.defaultChannel}'`
+NVIDIA_CHANNEL=`${OPENSHIFT_CLIENT} get packagemanifest gpu-operator-certified -n openshift-marketplace -o jsonpath='{.status.defaultChannel}'`
 
-NVIDIA_STARTINGCSV=`oc get packagemanifest gpu-operator-certified -n openshift-marketplace -o jsonpath='{.status.channels[?(@.name=="'"${NVIDIA_CHANNEL}"'")].currentCSV}{"\n"}'`
+NVIDIA_STARTINGCSV=`${OPENSHIFT_CLIENT} get packagemanifest gpu-operator-certified -n openshift-marketplace -o jsonpath='{.status.channels[?(@.name=="'"${NVIDIA_CHANNEL}"'")].currentCSV}{"\n"}'`
 
 tee nvidia-gpu-operator.yaml << EOF
 apiVersion: operators.coreos.com/v1alpha1
@@ -99,15 +100,15 @@ spec:
   startingCSV: ${NVIDIA_STARTINGCSV}
 EOF
 
-oc apply -f nvidia-gpu-operator.yaml
+${OPENSHIFT_CLIENT} apply -f nvidia-gpu-operator.yaml
 
 sleep 10
 
 echo "Waiting for GPU operator deployment to be available..."
-oc wait --for=condition=Available --timeout=5m deployment/gpu-operator -n nvidia-gpu-operator
+${OPENSHIFT_CLIENT} wait --for=condition=Available --timeout=5m deployment/gpu-operator -n nvidia-gpu-operator
 
 echo "Waiting for GPU operator CSV to be ready..."
-oc wait --for=jsonpath='{.status.phase}'=Succeeded --timeout=5m csv -l operators.coreos.com/gpu-operator-certified.nvidia-gpu-operator -n nvidia-gpu-operator
+${OPENSHIFT_CLIENT} wait --for=jsonpath='{.status.phase}'=Succeeded --timeout=5m csv -l operators.coreos.com/gpu-operator-certified.nvidia-gpu-operator -n nvidia-gpu-operator
 
 tee gpu-clusterpolicy.yaml << EOF
 apiVersion: nvidia.com/v1
@@ -126,12 +127,12 @@ spec:
   toolkit: {}
 EOF
 
-oc apply -f gpu-clusterpolicy.yaml
+${OPENSHIFT_CLIENT} apply -f gpu-clusterpolicy.yaml
 
-oc wait ClusterPolicy gpu-cluster-policy  -n nvidia-gpu-operator --for condition=Ready=True --timeout=30m
+${OPENSHIFT_CLIENT} wait ClusterPolicy gpu-cluster-policy  -n nvidia-gpu-operator --for condition=Ready=True --timeout=30m
 
 echo "Verifying the GPU operator labelled the worker node"
-oc get node -l nvidia.com/gpu.present -oname
+${OPENSHIFT_CLIENT} get node -l nvidia.com/gpu.present -oname
 
 echo "Creating a GPU operator verification job"
 
@@ -157,8 +158,8 @@ spec:
             nvidia.com/gpu: 1
 EOF
 
-oc apply -f verify-cuda-vectoradd.yaml
+${OPENSHIFT_CLIENT} apply -f verify-cuda-vectoradd.yaml
 
-oc wait --for=condition=complete job/verify-cuda-vectoradd -n nvidia-gpu-operator --timeout=5m
+${OPENSHIFT_CLIENT} wait --for=condition=complete job/verify-cuda-vectoradd -n nvidia-gpu-operator --timeout=5m
 
-oc logs job/verify-cuda-vectoradd -n nvidia-gpu-operator
+${OPENSHIFT_CLIENT} logs job/verify-cuda-vectoradd -n nvidia-gpu-operator
