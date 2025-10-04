@@ -9,7 +9,7 @@ EDPM_DISK ?= 640
 PROXY_USER ?= rhoai
 PROXY_PASSWORD ?= 12345678
 
-OPENSHIFT_INSTALLER ?= $(shell which openshift-installer 2>/dev/null)
+OPENSHIFT_INSTALLER ?= $(shell which openshift-install 2>/dev/null)
 OPENSHIFT_CLIENT ?= $(shell which oc 2>/dev/null)
 OPENSHIFT_INSTALLCONFIG ?=
 CLUSTER_NAME ?= rhoai
@@ -43,7 +43,7 @@ deploy_rhoso_dataplane: ensure_rhoso_rhelai ## Deploy an EDPM node with PCI pass
 .PHONY: deploy_shiftstack
 deploy_shiftstack: ## Deploy OpenShift on OpenStack
 ifeq ($(OPENSHIFT_INSTALLER),)
-	$(error openshift-installer not found in PATH. Please go to https://amd64.ocp.releases.ci.openshift.org/ and download the openshift installer or set the OPENSHIFT_INSTALLER variable with its custom PATH)
+	$(error openshift-install not found in PATH. Please go to https://amd64.ocp.releases.ci.openshift.org/ and download the openshift installer or set the OPENSHIFT_INSTALLER variable with its custom PATH)
 endif
 	$(info Creating OpenStack Networks, Flavors and Quotas)
 	@scripts/openstack_prerequisites.sh "$(EDPM_CPUS)" "$(EDPM_RAM)" "$(EDPM_DISK)"
@@ -90,7 +90,7 @@ endif
 .PHONY: clean_shiftstack
 clean_shiftstack: ## Clean OpenShift on RHOSO cluster
 ifeq ($(OPENSHIFT_INSTALLER),)
-	$(error openshift-installer not found in PATH. Please go to https://amd64.ocp.releases.ci.openshift.org/ and download the openshift installer or set the OPENSHIFT_INSTALLER variable with its custom PATH)
+	$(error openshift-install not found in PATH. Please go to https://amd64.ocp.releases.ci.openshift.org/ and download the openshift installer or set the OPENSHIFT_INSTALLER variable with its custom PATH)
 endif
 	$(info Destroying the OpenShift cluster)
 ifeq (,$(wildcard clusters/$(CLUSTER_NAME)))
