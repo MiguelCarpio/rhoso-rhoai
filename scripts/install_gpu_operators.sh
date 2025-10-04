@@ -42,7 +42,7 @@ spec:
 EOF
 
 echo "Waiting for NFD deployment to be available..."
-sleep 30
+sleep 120
 ${OPENSHIFT_CLIENT} wait --for=condition=Available --timeout=5m deployment/nfd-controller-manager -n openshift-nfd
 
 cat << EOF | ${OPENSHIFT_CLIENT} apply -f -
