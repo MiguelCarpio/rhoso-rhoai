@@ -127,7 +127,7 @@ make deploy_rhoso_dataplane
 ## Deploying ShiftStack
 
 To deploy OpenShift on RHOSO you'll need the `pull-secret`, the `openshift-install` and the `oc` client. The `pull-secret` file must exist as
-`~/pull-secret`, the OpenShift installer and the client must be found in the `$PATH`. However, you can set the `PULL_SECRET` env var with the `pull-secret` location. Regarding the `openshift-install` and `oc`, you can get the installer and client from https://amd64.ocp.releases.ci.openshift.org/, choose a [supported OCP version](https://access.redhat.com/support/policy/updates/rhoai-sm/lifecycle), and set the `OPENSHIFT_INSTALLER` and `OPENSHIFT_CLIENT` env vars with the `openshift-install` and `oc` location.
+`~/pull-secret`, the OpenShift installer and the client must be found in the `$PATH`. However, you can set the `PULL_SECRET` env var with the `pull-secret` location. Regarding the `openshift-install` and `oc`, you can get the installer and client from https://amd64.ocp.releases.ci.openshift.org/, choose a [supported OCP version](https://access.redhat.com/support/policy/updates/rhoai-sm/lifecycle), and set the `OPENSHIFT_INSTALL` and `OPENSHIFT_CLIENT` env vars with the `openshift-install` and `oc` location.
 
 ```bash
 make deploy_shiftstack
@@ -232,7 +232,7 @@ the different phases.  This is a non-exhaustive list:
   - PULL_SECRET
   - PROXY_USER
   - PROXY_PASSWORD
-  - OPENSHIFT_INSTALLER
+  - OPENSHIFT_INSTALL
   - OPENSHIFT_INSTALLCONFIG
   - CLUSTER_NAME
 
@@ -244,7 +244,7 @@ EDPM_CPUS=96 EDPM_RAM=256 PULL_SECRET=~/.config/openstack/pull-secret.txt make d
 ```
 If you want to set the `openshift-install` location and change the default ShiftStack cluster name:
 ```
-OPENSHIFT_INSTALLER=openshift-install CLUSTER_NAME=custom-ocp-name make deploy_shiftstack
+OPENSHIFT_INSTALL=openshift-install CLUSTER_NAME=custom-ocp-name make deploy_shiftstack
 ```
 By default, the `deploy_shiftstack` target uses the `~/.ssh/id_rsa.pub` SSH pub key, if you want to use a specific key for the OpenShift installation, you can set the custom key location with `SSH_PUB_KEY` env var. This key will be used for access to the bootstrap machine and debugging it in case of failure:
 ```

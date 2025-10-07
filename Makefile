@@ -9,7 +9,7 @@ EDPM_DISK ?= 640
 PROXY_USER ?= rhoai
 PROXY_PASSWORD ?= 12345678
 
-OPENSHIFT_INSTALLER ?= $(shell which openshift-install 2>/dev/null)
+OPENSHIFT_INSTALL ?= $(shell which openshift-install 2>/dev/null)
 OPENSHIFT_CLIENT ?= $(shell which oc 2>/dev/null)
 OPENSHIFT_INSTALLCONFIG ?=
 CLUSTER_NAME ?= rhoai
@@ -42,8 +42,8 @@ deploy_rhoso_dataplane: ensure_rhoso_rhelai ## Deploy an EDPM node with PCI pass
 ##@ DEPLOY SHIFTSTACK
 .PHONY: deploy_shiftstack
 deploy_shiftstack: ## Deploy OpenShift on OpenStack
-ifeq ($(OPENSHIFT_INSTALLER),)
-	$(error openshift-install not found in PATH. Please go to https://amd64.ocp.releases.ci.openshift.org/ and download the openshift installer or set the OPENSHIFT_INSTALLER variable with its custom PATH)
+ifeq ($(OPENSHIFT_INSTALL),)
+	$(error openshift-install not found in PATH. Please go to https://amd64.ocp.releases.ci.openshift.org/ and download the openshift installer or set the OPENSHIFT_INSTALL variable with its custom PATH)
 endif
 	$(info Creating OpenStack Networks, Flavors and Quotas)
 	@scripts/openstack_prerequisites.sh "$(EDPM_CPUS)" "$(EDPM_RAM)" "$(EDPM_DISK)"
@@ -55,11 +55,11 @@ endif
 	@mkdir -p clusters/$(CLUSTER_NAME)
 ifeq (,$(wildcard $(OPENSHIFT_INSTALLCONFIG)))
 	$(info Making the OpenShift Cluster Install Configuration at clusters/$(CLUSTER_NAME)/install-config.yaml)
-	@cd scripts && ./build_installconfig.sh "../$(OPENSHIFT_INSTALLER)" "$(PULL_SECRET)" "$(CLUSTER_NAME)" "$(PROXY_USER)" "$(PROXY_PASSWORD)" "$(SSH_PUB_KEY)"
+	@cd scripts && ./build_installconfig.sh "../$(OPENSHIFT_INSTALL)" "$(PULL_SECRET)" "$(CLUSTER_NAME)" "$(PROXY_USER)" "$(PROXY_PASSWORD)" "$(SSH_PUB_KEY)"
 else
 	@cp $(OPENSHIFT_INSTALLCONFIG) clusters/$(CLUSTER_NAME)/
 endif
-	@$(OPENSHIFT_INSTALLER) --log-level debug --dir clusters/$(CLUSTER_NAME) create cluster
+	@$(OPENSHIFT_INSTALL) --log-level debug --dir clusters/$(CLUSTER_NAME) create cluster
 
 ##@ DEPLOY GPU WORKER NODES
 .PHONY: deploy_worker_gpu
@@ -89,14 +89,14 @@ endif
 ##@ CLEAN SHIFTSTACK
 .PHONY: clean_shiftstack
 clean_shiftstack: ## Clean OpenShift on RHOSO cluster
-ifeq ($(OPENSHIFT_INSTALLER),)
-	$(error openshift-install not found in PATH. Please go to https://amd64.ocp.releases.ci.openshift.org/ and download the openshift installer or set the OPENSHIFT_INSTALLER variable with its custom PATH)
+ifeq ($(OPENSHIFT_INSTALL),)
+	$(error openshift-install not found in PATH. Please go to https://amd64.ocp.releases.ci.openshift.org/ and download the openshift installer or set the OPENSHIFT_INSTALL variable with its custom PATH)
 endif
 	$(info Destroying the OpenShift cluster)
 ifeq (,$(wildcard clusters/$(CLUSTER_NAME)))
 	$(error Cluster directory clusters/$(CLUSTER_NAME) not found)
 endif
-	@$(OPENSHIFT_INSTALLER) --log-level debug --dir clusters/$(CLUSTER_NAME) destroy cluster
+	@$(OPENSHIFT_INSTALL) --log-level debug --dir clusters/$(CLUSTER_NAME) destroy cluster
 
 ##@ CLEAN RHOSO DATA PLANE
 .PHONY: clean_rhoso_dataplane
