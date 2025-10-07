@@ -126,8 +126,7 @@ make deploy_rhoso_dataplane
 
 ## Deploying ShiftStack
 
-To deploy OpenShift on RHOSO you'll need the `pull-secret`, the `openshift-install` and the `oc` client. The `pull-secret` file must exist as
-`~/pull-secret`, the OpenShift installer and the client must be found in the `$PATH`. However, you can set the `PULL_SECRET` env var with the `pull-secret` location. Regarding the `openshift-install` and `oc`, you can get the installer and client from https://amd64.ocp.releases.ci.openshift.org/, choose a [supported OCP version](https://access.redhat.com/support/policy/updates/rhoai-sm/lifecycle), and set the `OPENSHIFT_INSTALL` and `OPENSHIFT_CLIENT` env vars with the `openshift-install` and `oc` location.
+To deploy OpenShift on RHOSO, you'll need the `pull-secret`, the `openshift-install` and the `oc` client. The `pull-secret` file must exist as `~/pull-secret`, the OpenShift installer and client will be searched in `$PATH`. However, you can set the `PULL_SECRET` env var with the `pull-secret` location. Regarding the `openshift-install` and `oc`, you can set the OpenShift release version like `OPENSHIFT_RELEASE=stable-4.18`, and the installer and client will be downloaded into `~/bin/`. If you already have the installer and client, you can set the `OPENSHIFT_INSTALL` and `OPENSHIFT_CLIENT` env vars with the `openshift-install` and `oc` location. Remember that if you want to deploy a CI or nightly OCP Release, you can get the installer and client from https://amd64.ocp.releases.ci.openshift.org/, choose a [supported OCP version](https://access.redhat.com/support/policy/updates/rhoai-sm/lifecycle).
 
 ```bash
 make deploy_shiftstack
