@@ -157,7 +157,7 @@ make deploy_worker_gpu
 This target also verifies that the GPU card is present on the GPU worker, deploys the GPU operators, verifies the GPU operator labelled the worker node and creates a GPU operator verification job.
 
 ```
-tee verify-cuda-vectoradd.yaml << EOF
+cat << EOF | oc apply -f -
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -179,7 +179,9 @@ spec:
             nvidia.com/gpu: 1
 EOF
 
-oc apply -f verify-cuda-vectoradd.yaml
+oc wait --for=condition=complete job/verify-cuda-vectoradd -n nvidia-gpu-operator --timeout=10m
+
+oc logs job/verify-cuda-vectoradd -n nvidia-gpu-operator
 ```
 The output of this target should be similar than:
 ```
