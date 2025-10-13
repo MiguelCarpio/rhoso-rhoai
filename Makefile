@@ -52,7 +52,7 @@ endif
 
 .PHONY: prerequisites
 prerequisites: ensure_rhoso_rhelai ## Installs basic tools & Validate GPU host
-	@sudo dnf -y install gcc-c++ zip git make pciutils squid wget curl
+	@sudo dnf -y install gcc-c++ zip git make pciutils squid wget curl python
 	@make -C rhoso-rhelai/nested-passthrough validate_host
 
 ##@ DEPLOY RHOSO CONTROL PLANE
@@ -103,6 +103,31 @@ ifeq (,$(wildcard clusters/$(CLUSTER_NAME)/auth/kubeconfig))
 endif
 	@cd scripts && CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./install_rhoai_operators.sh
 	@cd scripts && CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./router_floating_ip.sh
+
+##@ DEPLOY MODEL SERVICE (INFERENCE CHAT)
+.PHONY: deploy_model_service
+deploy_model_service: ensure_openshift_client ## Deploy and Verify model serving with an inference chat and metrics
+	$(info Deploying and verifying model serving with an inference chat and metrics)
+ifeq (,$(wildcard clusters/$(CLUSTER_NAME)/auth/kubeconfig))
+	$(error The kubeconfig is missing, it should be at clusters/$(CLUSTER_NAME)/auth/kubeconfig)
+endif
+	@cd scripts && CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./deploy_model_service.sh  
+	@echo "Getting model service metrics"
+ifeq (,$(wildcard gpu-validation)) ## Using MiguelCarpio/gpu-validation url branch until https://github.com/rhos-vaf/gpu-validation/pull/5 is merged
+	@git clone https://github.com/MiguelCarpio/gpu-validation.git
+else
+	@cd gpu-validation && git remote update && git checkout origin/url
+endif
+	@cd gpu-validation/gpu-validation/files/scripts/ && URL=https://$$(${OPENSHIFT_CLIENT} get route -n vllm-llama -o jsonpath='{.items[0].spec.host}') MODEL_NAME="RedHatAI/Llama-3.2-1B-Instruct-FP8" ./model_performance_check.sh
+
+##@ CLEAN MODEL SERVICE
+.PHONY: clean_model_service
+clean_model_service: ensure_openshift_client ## Delete vllm-llama namespace
+	$(info Deleting vllm-llama namespace)
+ifeq (,$(wildcard clusters/$(CLUSTER_NAME)/auth/kubeconfig))
+	$(error The kubeconfig is missing, it should be at clusters/$(CLUSTER_NAME)/auth/kubeconfig)
+endif
+	@export KUBECONFIG=clusters/$(CLUSTER_NAME)/auth/kubeconfig  && $(OPENSHIFT_CLIENT) delete project vllm-llama
 
 ##@ CLEAN SHIFTSTACK
 .PHONY: clean_shiftstack

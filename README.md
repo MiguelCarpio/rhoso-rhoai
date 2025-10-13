@@ -213,6 +213,39 @@ In addition, this target identifies the worker node where the router resource is
 Finally, you will show a message to access the RHOAI dashboard URL. Like this:
 `Access the RHOAI dashboard` https://rhods-dashboard-redhat-ods-applications.apps.rhoai.shiftstack.test
 
+## Deploying Model Service
+
+RHOAI provides a secure, GPU-enabled, and scalable platform where a curated, high-performance AI runtime (the vLLM serving and inference engine) could be deployed and exposed.
+
+This target deploys the vLLM `registry.redhat.io/rhaiis/vllm-cuda-rhel9` with the model `RedHatAI/Llama-3.2-1B-Instruct-FP8` to serve an inference chat that can be used like this:
+
+Model Service Deployment:
+```
+make deploy_model_service
+```
+
+Verify Model Serving (Inference Chat)
+```
+curl -k -s --show-error -f -X POST \
+  "https://vllm-llama-route-vllm-llama.apps.rhoai.shiftstack.test/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  --data '{
+    "messages": [
+      {
+        "role": "user",
+        "content": "Who am I speaking to?"
+      }
+    ]
+  }'
+```
+
+Get Metrics
+```
+curl -k -s --show-error -f -X POST \
+  "https://vllm-llama-route-vllm-llama.apps.rhoai.shiftstack.test/metrics" \
+  -H "Content-Type: application/json"
+```
+
 # Customization
 
 There should be reasonable defaults, but you can still configuration a number
