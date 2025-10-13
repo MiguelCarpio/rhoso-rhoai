@@ -47,7 +47,7 @@ ifeq (,$(wildcard $(OPENSHIFT_INSTALL)))
 		echo "Error: Failed to retrieve RELEASE_IMAGE from OpenShift mirror. Be sure that you are setting a valid OPENSHIFT_RELEASE version, see the list at https://mirror.openshift.com/pub/openshift-v4/clients/ocp/" >&2; \
 		exit 1; \
 	fi; \
-	$(OPENSHIFT_CLIENT) adm release extract --registry-config $(PULL_SECRET) --command=openshift-install --to $(HOME)/bin/ $$RELEASE_IMAGE
+	$(OPENSHIFT_CLIENT) adm release extract --registry-config "$(PULL_SECRET)" --command=openshift-install --to "$(HOME)/bin/" $$RELEASE_IMAGE
 endif
 
 .PHONY: prerequisites
@@ -58,29 +58,29 @@ prerequisites: ensure_rhoso_rhelai ## Installs basic tools & Validate GPU host
 ##@ DEPLOY RHOSO CONTROL PLANE
 .PHONY: deploy_rhoso_controlplane
 deploy_rhoso_controlplane: prerequisites ## Deploy OCP cluster using CRC, deploy OSP operators, and deploy the OpenStack Control Plane
-	@make -C rhoso-rhelai/nested-passthrough DEPLOY_CINDER=true PULL_SECRET=$(PULL_SECRET) deploy_controlplane
+	@make -C rhoso-rhelai/nested-passthrough DEPLOY_CINDER=true PULL_SECRET="$(PULL_SECRET)" deploy_controlplane
 
 ##@ DEPLOY RHOSO DATA PLANE
 .PHONY: deploy_rhoso_dataplane
 deploy_rhoso_dataplane: ensure_rhoso_rhelai ## Deploy an EDPM node with PCI passthrough
-	@make -C rhoso-rhelai/nested-passthrough EDPM_CPUS=$(EDPM_CPUS) EDPM_RAM=$(EDPM_RAM) EDPM_DISK=$(EDPM_DISK) PULL_SECRET=$(PULL_SECRET) deploy_edpm
+	@make -C rhoso-rhelai/nested-passthrough EDPM_CPUS=$(EDPM_CPUS) EDPM_RAM=$(EDPM_RAM) EDPM_DISK=$(EDPM_DISK) PULL_SECRET="$(PULL_SECRET)" deploy_edpm
 
 ##@ DEPLOY SHIFTSTACK
 .PHONY: deploy_shiftstack
 deploy_shiftstack: ensure_openshift_install ## Deploy OpenShift on OpenStack
 	$(info Creating OpenStack Networks, Flavors and Quotas)
-	@scripts/openstack_prerequisites.sh "$(EDPM_CPUS)" "$(EDPM_RAM)" "$(EDPM_DISK)"
+	@cd scripts && EDPM_CPUS=$(EDPM_CPUS) EDPM_RAM=$(EDPM_RAM) EDPM_DISK=$(EDPM_DISK) ./openstack_prerequisites.sh
 	$(info Setting firewall permissions)
-	@scripts/firewall_permissions.sh
+	@cd scripts && ./firewall_permissions.sh
 	$(info Deploying proxy server)
-	@scripts/proxy_setup.sh "$(PROXY_USER)" "$(PROXY_PASSWORD)"
+	@cd scripts && PROXY_USER="$(PROXY_USER)" PROXY_PASSWORD="$(PROXY_PASSWORD)" ./proxy_setup.sh
 	$(info Making the OpenShift installation directory at clusters/$(CLUSTER_NAME))
 	@mkdir -p clusters/$(CLUSTER_NAME)
 ifeq (,$(wildcard $(OPENSHIFT_INSTALLCONFIG)))
 	$(info Making the OpenShift Cluster Install Configuration at clusters/$(CLUSTER_NAME)/install-config.yaml)
-	@cd scripts && ./build_installconfig.sh "../$(OPENSHIFT_INSTALL)" "$(PULL_SECRET)" "$(CLUSTER_NAME)" "$(PROXY_USER)" "$(PROXY_PASSWORD)" "$(SSH_PUB_KEY)"
+	@cd scripts && PULL_SECRET="$(PULL_SECRET)" CLUSTER_NAME="$(CLUSTER_NAME)" PROXY_USER="$(PROXY_USER)" PROXY_PASSWORD="$(PROXY_PASSWORD)" SSH_PUB_KEY="$(SSH_PUB_KEY)" ./build_installconfig.sh
 else
-	@cp $(OPENSHIFT_INSTALLCONFIG) clusters/$(CLUSTER_NAME)/
+	@cp "$(OPENSHIFT_INSTALLCONFIG)" clusters/$(CLUSTER_NAME)/
 endif
 	@$(OPENSHIFT_INSTALL) --log-level debug --dir clusters/$(CLUSTER_NAME) create cluster
 
@@ -91,8 +91,8 @@ deploy_worker_gpu: ensure_openshift_client ## Create a new MachineSet for the GP
 ifeq (,$(wildcard clusters/$(CLUSTER_NAME)/auth/kubeconfig))
 	$(error The kubeconfig is missing, it should be at clusters/$(CLUSTER_NAME)/auth/kubeconfig)
 endif
-	@cd scripts && ./create_worker_gpu.sh "$(CLUSTER_NAME)" "$(OPENSHIFT_CLIENT)"
-	@cd scripts && ./install_gpu_operators.sh "$(CLUSTER_NAME)" "$(OPENSHIFT_CLIENT)"
+	@cd scripts && CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./create_worker_gpu.sh 
+	@cd scripts && CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./install_gpu_operators.sh
 
 ##@ DEPLOY OPENSHIFT AI
 .PHONY: deploy_rhoai
@@ -101,7 +101,7 @@ deploy_rhoai: ensure_openshift_client ## Deploy OpenShift AI
 ifeq (,$(wildcard clusters/$(CLUSTER_NAME)/auth/kubeconfig))
 	$(error The kubeconfig is missing, it should be at clusters/$(CLUSTER_NAME)/auth/kubeconfig)
 endif
-	@cd scripts && ./install_rhoai_operators.sh "$(CLUSTER_NAME)" "$(OPENSHIFT_CLIENT)"
+	@cd scripts && CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./install_rhoai_operators.sh
 
 ##@ CLEAN SHIFTSTACK
 .PHONY: clean_shiftstack

@@ -2,8 +2,9 @@
 
 set -ex
 
-CLUSTER_NAME=$1
-OPENSHIFT_CLIENT=$2
+CLUSTER_NAME="${CLUSTER_NAME:-rhoai}"
+OPENSHIFT_CLIENT="${OPENSHIFT_CLIENT:-$(which oc)}"
+
 export KUBECONFIG=../clusters/${CLUSTER_NAME}/auth/kubeconfig
 
 # Checking the cluster health
