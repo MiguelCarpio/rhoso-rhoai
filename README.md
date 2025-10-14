@@ -217,7 +217,7 @@ Finally, you will show a message to access the RHOAI dashboard URL. Like this:
 
 RHOAI provides a secure, GPU-enabled, and scalable platform where a curated, high-performance AI runtime (the vLLM serving and inference engine) could be deployed and exposed.
 
-This target deploys the vLLM `registry.redhat.io/rhaiis/vllm-cuda-rhel9` with the model `RedHatAI/Llama-3.2-1B-Instruct-FP8` to serve an inference chat that can be used like this:
+This target sets the `registry.redhat.io/rhaiis/vllm-cuda-rhel9` vLLM runtime to deploy the `RedHatAI/Llama-3.2-1B-Instruct-FP8` model for an Inference Chat Endpoint. You can deploy and verify the model service like this:
 
 Model Service Deployment:
 ```
