@@ -63,6 +63,21 @@ echo "Waiting for OpenShift Serverless Operator to be ready..."
 sleep 30
 ${OPENSHIFT_CLIENT} wait --for=condition=Available --timeout=5m deployment/knative-openshift -n openshift-serverless
 
+echo "Deploying the Authorino Operator"
+
+cat << EOF | ${OPENSHIFT_CLIENT} apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: authorino-operator
+  namespace: openshift-operators
+spec:
+  channel: stable
+  name: authorino-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
+
 echo "Deploying the Red Hat OpenShift AI Operator"
 
 ${OPENSHIFT_CLIENT} create namespace redhat-ods-operator || true
