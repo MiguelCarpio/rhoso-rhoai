@@ -13,7 +13,7 @@ if ! ${OPENSHIFT_CLIENT} get clusterversion version -o jsonpath='{range .status.
   exit 1
 fi
 
-echo "Creating a model service"
+echo "Setting a rhaiis/vllm-cuda-rhel9 vLLM runtime to deploy the RedHatAI/Llama-3.2-1B-Instruct-FP8 model for an Inference Chat Endpoint"
 
 ${OPENSHIFT_CLIENT} create namespace vllm-llama || true
 
@@ -176,4 +176,4 @@ if [ "${hosts}" != "${old_hosts}" ]; then
 fi
 
 # Access to the  Model Service - Inference Chat
-echo "Now you can chat and request metrics with the following inference endpoint https://${INFERENCE_ENDPOINT}"
+echo "Model Service is ready!!! Now you can chat and request metrics with the following inference endpoint https://${INFERENCE_ENDPOINT}"
