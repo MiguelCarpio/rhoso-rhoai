@@ -146,6 +146,8 @@ spec:
             nvidia.com/gpu: 1
 EOF
 
-${OPENSHIFT_CLIENT} wait --for=condition=complete job/verify-cuda-vectoradd -n nvidia-gpu-operator --timeout=10m
+${OPENSHIFT_CLIENT} wait --for=condition=complete job/verify-cuda-vectoradd -n nvidia-gpu-operator --timeout=15m
 
 ${OPENSHIFT_CLIENT} logs job/verify-cuda-vectoradd -n nvidia-gpu-operator
+
+${OPENSHIFT_CLIENT} delete job/verify-cuda-vectoradd -n nvidia-gpu-operator
