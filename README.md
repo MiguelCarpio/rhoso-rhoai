@@ -202,17 +202,16 @@ OpenShift AI needs the following resources:
 - Red Hat OpenShift AI Operator
 - DataScience Cluster
 
-To deploy RHOAI run the following target:
+To deploy RHOAI and its required resources, run the following target:
 
 ```
 make deploy_rhoai
 ```
 
-Finally, it shows a message to access the RHOAI dashboard URL. Like this:
-`Access the RHOAI dashboard https://rhods-dashboard-redhat-ods-applications.apps.rhoai.shiftstack.test`
+In addition, this target identifies the worker node where the router resource is allocated and updates the `/etc/host` with the `rhods-dashboard-redhat-ods-applications.apps.${CLUSTER_NAME}.${BASE_DOMAIN}` registry.
 
-> [!IMPORTANT] 
-> You must identify the worker where the router resource is allocated, you can use the following command line `oc get pods -n openshift-ingress -o wide`. Then, you can add a floating ip on that worker instance. Finally, update your `/etc/host` and access the OpenShift AI URL. 
+Finally, you will show a message to access the RHOAI dashboard URL. Like this:
+`Access the RHOAI dashboard` https://rhods-dashboard-redhat-ods-applications.apps.rhoai.shiftstack.test
 
 # Customization
 
