@@ -2,9 +2,10 @@
 
 set -ex
 
-VCPU=$1
-RAM_MB=$((${2} * 1024))
-GIGABYTES=$3
+EDPM_CPUS="${EDPM_CPUS:-40}"
+EDPM_RAM="${EDPM_RAM:-160}"
+EDPM_RAM_MB=$((${EDPM_RAM} * 1024))
+EDPM_DISK=${EDPM_DISK:-640}
 
 if ! which openstack > /dev/null 2>&1; then
     echo "openstack command not found, installing python-openstackclient..."
@@ -56,6 +57,6 @@ openstack flavor show worker_gpu || openstack flavor create --vcpu 16 --ram 6553
       --property "hw:hide_hypervisor_id"=true
 
 echo "Setting the Project Quotas"
-openstack quota set --cores ${VCPU}
-openstack quota set --ram ${RAM_MB}
-openstack quota set --gigabytes ${GIGABYTES}
+openstack quota set --cores ${EDPM_CPUS}
+openstack quota set --ram ${EDPM_RAM_MB}
+openstack quota set --gigabytes ${EDPM_DISK}

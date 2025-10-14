@@ -2,9 +2,10 @@
 
 set -ex
 
-CLUSTER_NAME=$1
-OPENSHIFT_CLIENT=$2
+CLUSTER_NAME="${CLUSTER_NAME:-rhoai}"
+OPENSHIFT_CLIENT="${OPENSHIFT_CLIENT:-$(which oc)}"
 GPU_MACHINESET=new-gpu-machineset.yaml
+
 export KUBECONFIG=../clusters/${CLUSTER_NAME}/auth/kubeconfig
 
 # Checking the cluster health
@@ -15,10 +16,10 @@ fi
 
 MACHINESET_NAME=$(${OPENSHIFT_CLIENT} get machinesets -n openshift-machine-api -l machine.openshift.io/cluster-api-machine-role=worker -o jsonpath='{.items[0].metadata.name}')
 ${OPENSHIFT_CLIENT} get machinesets ${MACHINESET_NAME} -n openshift-machine-api -o yaml > ${GPU_MACHINESET}
-sed -i "s|${MACHINESET_NAME}|${MACHINESET_NAME%0}1|g" ${GPU_MACHINESET}
-sed -i "/flavor/ s/: .*/: worker_gpu/" ${GPU_MACHINESET}
+sed -i "s|${MACHINESET_NAME}|${MACHINESET_NAME%0}1|g" "${GPU_MACHINESET}"
+sed -i "/flavor/ s/: .*/: worker_gpu/" "${GPU_MACHINESET}"
 
-${OPENSHIFT_CLIENT} create -f ${GPU_MACHINESET}
+${OPENSHIFT_CLIENT} apply -f "${GPU_MACHINESET}"
 
 echo "Waiting for the worker gpu node to be ready"
 ${OPENSHIFT_CLIENT} wait machinesets/${MACHINESET_NAME%0}1 -n openshift-machine-api --for=jsonpath='{.status.availableReplicas}'=1 --timeout=40m

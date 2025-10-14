@@ -2,8 +2,8 @@
 
 set -ex
 
-PROXY_USER=$1
-PROXY_PASSWORD=$2
+PROXY_USER="${PROXY_USER:-rhoai}"
+PROXY_PASSWORD="${PROXY_PASSWORD:-12345678}"
 
 sudo tee /etc/squid/squid.conf > /dev/null << EOF
 acl localnet src all
@@ -24,7 +24,7 @@ http_access allow localnet
 http_access deny all
 EOF
 
-sudo htpasswd -bBc /etc/squid/htpasswd $PROXY_USER $PROXY_PASSWORD
+sudo htpasswd -bBc /etc/squid/htpasswd "$PROXY_USER" "$PROXY_PASSWORD"
 
 sudo systemctl start squid
 
