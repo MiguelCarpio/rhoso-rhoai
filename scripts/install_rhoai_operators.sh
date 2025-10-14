@@ -61,7 +61,7 @@ spec:
 EOF
 
 echo "Waiting for OpenShift Serverless Operator to be ready..."
-sleep 30
+sleep 60
 ${OPENSHIFT_CLIENT} wait --for=condition=Available --timeout=5m deployment/knative-openshift -n openshift-serverless
 
 echo "Deploying the Authorino Operator"
@@ -106,7 +106,7 @@ spec:
 EOF
 
 echo "Waiting for RHOAI Operator to be ready..."
-sleep 30
+sleep 60
 ${OPENSHIFT_CLIENT} wait --for=condition=Available --timeout=10m deployment/rhods-operator -n redhat-ods-operator
 
 cat << EOF | ${OPENSHIFT_CLIENT} apply -f -
