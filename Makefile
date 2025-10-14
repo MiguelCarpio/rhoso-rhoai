@@ -101,8 +101,8 @@ deploy_rhoai: ensure_openshift_client ## Deploy OpenShift AI
 ifeq (,$(wildcard clusters/$(CLUSTER_NAME)/auth/kubeconfig))
 	$(error The kubeconfig is missing, it should be at clusters/$(CLUSTER_NAME)/auth/kubeconfig)
 endif
-	@cd scripts && CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./install_rhoai_operators.sh
 	@cd scripts && CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./router_floating_ip.sh
+	@cd scripts && CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./install_rhoai_operators.sh
 
 ##@ DEPLOY MODEL SERVICE (INFERENCE CHAT)
 .PHONY: deploy_model_service
