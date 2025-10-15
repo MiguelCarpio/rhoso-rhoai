@@ -133,7 +133,7 @@ ifeq (,$(wildcard gpu-validation)) ## Using MiguelCarpio/gpu-validation url bran
 else
 	@cd gpu-validation && git remote update && git checkout origin/url
 endif
-	@cd gpu-validation/gpu-validation/files/scripts/ && URL=https://$$(${OPENSHIFT_CLIENT} get route -n vllm-llama -o jsonpath='{.items[0].spec.host}') MODEL_NAME="RedHatAI/Llama-3.2-1B-Instruct-FP8" ./model_performance_check.sh
+	@export KUBECONFIG=clusters/$(CLUSTER_NAME)/auth/kubeconfig && cd gpu-validation/gpu-validation/files/scripts/ && URL=https://$$(${OPENSHIFT_CLIENT} get route -n vllm-llama -o jsonpath='{.items[0].spec.host}') MODEL_NAME="RedHatAI/Llama-3.2-1B-Instruct-FP8" ./model_performance_check.sh
 
 ##@ CLEAN MODEL SERVICE
 .PHONY: clean_model_service
