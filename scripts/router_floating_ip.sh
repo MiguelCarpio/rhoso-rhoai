@@ -11,7 +11,9 @@ export KUBECONFIG="../clusters/${CLUSTER_NAME}/auth/kubeconfig"
 
 ROUTER_WORKER=$(${OPENSHIFT_CLIENT} get pods -n openshift-ingress -o jsonpath='{.items[0].spec.nodeName}')
 
-ROUTER_FLOATINGIP=$(openstack server show "${ROUTER_WORKER}" -f value -c addresses | grep -oP '192\.168\.122\.\d{1,3}' || true)
+# Get the server's port and then find the floating IP attached to it
+SERVER_PORT=$(openstack port list --server "${ROUTER_WORKER}" -f value -c ID)
+ROUTER_FLOATINGIP=$(openstack floating ip list --port "${SERVER_PORT}" -f value -c "Floating IP Address")
 
 if [ -n "${ROUTER_FLOATINGIP}" ]; then
     echo "The OpenShift Ingress Router Default runs in ${ROUTER_WORKER} node which already has the floating IP ${ROUTER_FLOATINGIP}"

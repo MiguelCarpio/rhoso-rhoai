@@ -3,20 +3,28 @@
 PULL_SECRET ?= $(HOME)/pull-secret
 SSH_PUB_KEY ?= $(HOME)/.ssh/id_rsa.pub
 
+IS_PROVIDED_CLOUD ?= no
+OS_CLOUD ?= default
+OPENSTACK_EXTERNAL_NETWORK ?= public
 EDPM_CPUS ?= 40
 EDPM_RAM ?= 160
 EDPM_DISK ?= 640
 
-OS_CLOUD ?= default
-
+OPENSHIFT_NEEDS_PROXY ?= 
 PROXY_USER ?= rhoai
 PROXY_PASSWORD ?= 12345678
+PROXY_HOST ?= 192.168.130.1
+PROXY_PORT ?= 3128
 
 OPENSHIFT_RELEASE ?= stable-4.18
 OPENSHIFT_INSTALL ?= $(shell which openshift-install 2>/dev/null || echo $(HOME)/bin/openshift-install)
 OPENSHIFT_CLIENT ?= $(shell which oc 2>/dev/null || echo $(HOME)/bin/oc)
 OPENSHIFT_INSTALLCONFIG ?=
 CLUSTER_NAME ?= rhoai
+EXTERNAL_DNS ?= 192.168.122.1
+OPENSTACK_FLAVOR ?= master
+OPENSTACK_WORKER_FLAVOR ?= worker
+OPENSTACK_WORKER_GPU_FLAVOR ?= worker_gpu
 
 .PHONY: help
 help: ## Display this help message
@@ -84,16 +92,20 @@ deploy_rhoso_dataplane: ensure_rhoso_rhelai ## Deploy an EDPM node with PCI pass
 .PHONY: deploy_shiftstack
 deploy_shiftstack: ensure_openshift_install ## Deploy OpenShift on RHOSO
 	$(info Creating OpenStack Networks, Flavors and Quotas)
-	@cd scripts && OS_CLOUD=$(OS_CLOUD) EDPM_CPUS=$(EDPM_CPUS) EDPM_RAM=$(EDPM_RAM) EDPM_DISK=$(EDPM_DISK) ./openstack_prerequisites.sh
+	@cd scripts && IS_PROVIDED_CLOUD=$(IS_PROVIDED_CLOUD) OS_CLOUD=$(OS_CLOUD) OPENSTACK_EXTERNAL_NETWORK=$(OPENSTACK_EXTERNAL_NETWORK) EDPM_CPUS=$(EDPM_CPUS) EDPM_RAM=$(EDPM_RAM) EDPM_DISK=$(EDPM_DISK) OPENSTACK_FLAVOR=$(OPENSTACK_FLAVOR) OPENSTACK_WORKER_FLAVOR=$(OPENSTACK_WORKER_FLAVOR) OPENSTACK_WORKER_GPU_FLAVOR=$(OPENSTACK_WORKER_GPU_FLAVOR) ./openstack_prerequisites.sh
+ifneq ($(filter $(IS_PROVIDED_CLOUD),yes YES y Y),)
+	$(info Skipping firewall and proxy setup - using provided cloud)
+else
 	$(info Setting firewall permissions)
 	@cd scripts && ./firewall_permissions.sh
 	$(info Deploying proxy server)
 	@cd scripts && PROXY_USER="$(PROXY_USER)" PROXY_PASSWORD="$(PROXY_PASSWORD)" ./proxy_setup.sh
+endif
 	$(info Making the OpenShift installation directory at clusters/$(CLUSTER_NAME))
 	@mkdir -p clusters/$(CLUSTER_NAME)
 ifeq (,$(wildcard $(OPENSHIFT_INSTALLCONFIG)))
 	$(info Making the OpenShift Cluster Install Configuration at clusters/$(CLUSTER_NAME)/install-config.yaml)
-	@cd scripts && OS_CLOUD=$(OS_CLOUD) PULL_SECRET="$(PULL_SECRET)" CLUSTER_NAME="$(CLUSTER_NAME)" PROXY_USER="$(PROXY_USER)" PROXY_PASSWORD="$(PROXY_PASSWORD)" SSH_PUB_KEY="$(SSH_PUB_KEY)" ./build_installconfig.sh
+	@cd scripts && IS_PROVIDED_CLOUD=$(IS_PROVIDED_CLOUD) OPENSHIFT_NEEDS_PROXY=$(OPENSHIFT_NEEDS_PROXY) OS_CLOUD=$(OS_CLOUD) OPENSTACK_EXTERNAL_NETWORK=$(OPENSTACK_EXTERNAL_NETWORK) PULL_SECRET="$(PULL_SECRET)" CLUSTER_NAME="$(CLUSTER_NAME)" PROXY_USER="$(PROXY_USER)" PROXY_PASSWORD="$(PROXY_PASSWORD)" PROXY_HOST="$(PROXY_HOST)" PROXY_PORT="$(PROXY_PORT)" SSH_PUB_KEY="$(SSH_PUB_KEY)" EXTERNAL_DNS="$(EXTERNAL_DNS)" OPENSTACK_FLAVOR=$(OPENSTACK_FLAVOR) OPENSTACK_WORKER_FLAVOR=$(OPENSTACK_WORKER_FLAVOR) OPENSTACK_WORKER_GPU_FLAVOR=$(OPENSTACK_WORKER_GPU_FLAVOR) ./build_installconfig.sh
 else
 	@cp "$(OPENSHIFT_INSTALLCONFIG)" clusters/$(CLUSTER_NAME)/
 endif
@@ -116,7 +128,7 @@ deploy_rhoai: ensure_openshift_client ## Deploy OpenShift AI
 ifeq (,$(wildcard clusters/$(CLUSTER_NAME)/auth/kubeconfig))
 	$(error The kubeconfig is missing, it should be at clusters/$(CLUSTER_NAME)/auth/kubeconfig)
 endif
-	@cd scripts && OS_CLOUD=$(OS_CLOUD) CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./router_floating_ip.sh
+	@cd scripts && OS_CLOUD=$(OS_CLOUD) OPENSTACK_EXTERNAL_NETWORK=$(OPENSTACK_EXTERNAL_NETWORK) CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./router_floating_ip.sh
 	@cd scripts && OS_CLOUD=$(OS_CLOUD) CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./install_rhoai_operators.sh
 
 ##@ DEPLOY MODEL SERVICE
