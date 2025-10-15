@@ -19,10 +19,7 @@ intended.
 
 ## Prerequisites
 
-You'll need at least one [NVIDIA GPU supported by RHOAI](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux_ai/1.5/html/hardware_requirements/hardware_requirements_rhelai) and some tools
-need to be installed as well the `install_yamls` and this repository. There is
-a helper make target for this, although there are some things that you still
-need to do:
+You'll need at least one [NVIDIA GPU supported by RHOAI](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux_ai/1.5/html/hardware_requirements/hardware_requirements_rhelai) and some tools need to be installed as well the [rhoso-rhelai](https://github.com/rhos-vaf/rhoso-rhelai), that uses [install_yamls](https://github.com/openstack-k8s-operators/install_yamls) and sets requeriments for the EDPM GPU Passthrough, and this repository. There is a prerequisites make target for this, although there are some things that you still need to do:
 
 ```bash
 sudo dnf -y install git make pciutils pip
@@ -30,16 +27,11 @@ git clone https://github.com/rhos-vaf/rhoso-rhoai.git
 cd rhoso-rhoai && make prerequisites
 ```
 
-The `prerequisites` target may fail if you don't have an NVIDIA GPU, if the GPU
-is being held by the graphics driver, if IOMMU is not properly configured, etc.
+The `prerequisites` target may fail if you don't have an NVIDIA GPU, if the GPU is being held by the graphics driver, if IOMMU is not properly configured, etc.
 
 ### Setting up the host
 
-We have to enable IOMMU and reserve the PCI devices. These operations change
-the booting command line and require generating the new GRUB configuration file
-and rebooting the machine, so we recommend following modifying the grub args
-for IOMMU and PCI reservation, and the recreate GRUB configuration and finally
-rebooting.  That is the order we show below.
+We have to enable IOMMU and reserve the PCI devices. These operations change the booting command line and require generating the new GRUB configuration file and rebooting the machine, so we recommend following modifying the grub args for IOMMU and PCI reservation, and the recreate GRUB configuration and finally rebooting.  That is the order we show below.
 
 #### IOMMU
 
@@ -51,8 +43,7 @@ sudo grubby --update-kernel ALL --args 'intel_iommu=on iommu=pt'
 
 #### Reserve PCI devices
 
-We don't want the nvidia driver to hold our PCI devices, or they won't be
-available for PCI passthrough.
+We don't want the nvidia driver to hold our PCI devices, or they won't be available for PCI passthrough.
 
 There are a couple of ways to do this:
 
@@ -74,8 +65,7 @@ For NVIDIA GPUs:
 echo -e "blacklist nouveau\nblacklist nvidia*" | sudo tee -a /etc/modprobe.d/blacklist.conf
 ```
 
-A description on how to do it on some complex blacklisting scenarios can be
-found in this [RH KCS article](https://access.redhat.com/solutions/41278).
+A description on how to do it on some complex blacklisting scenarios can be found in this [RH KCS article](https://access.redhat.com/solutions/41278).
 
 ##### VFIO reservation
 
@@ -87,16 +77,13 @@ sudo lspci -nn | grep NVIDIA
 # 04:00.0 3D controller [0302]: NVIDIA Corporation GA100 [A100 PCIe 40GB] [10de:20f1] (rev a1)
 ```
 
-Now that we see that the device has vendor id `10de` (that's NVIDIA) and
-product id `20f1` we can reserve it. Set the `PCI` variable first with the 
-respective value, for this example `PCI="10de:20f1"`
+Now that we see that the device has vendor id `10de` (that's NVIDIA) and product id `20f1` we can reserve it. Set the `PCI` variable first with the respective value, for this example `PCI="10de:20f1"`
 
 ```
 sudo grubby --update-kernel ALL --args "rd.driver.pre=vfio_pci vfio_pci.ids=${PCI} modules-load=vfio,vfio-pci,vfio_iommu_type1,vfio_pci_vfio_virqfd"
 ```
 
-Note: If we wanted to reserve multiple PCI devices that have different product
-id, we can separate them with a comma: `PCI=10de:20f1,10de:2684`
+Note: If we wanted to reserve multiple PCI devices that have different product id, we can separate them with a comma: `PCI=10de:20f1,10de:2684`
 
 #### Rebuild GRUB cfg
 
@@ -110,12 +97,9 @@ sudo shutdown -r now
 
 ## Deploying RHOSO
 
-Deploying OpenStack on OpenShift has 2 phases: Deploying the control plane and
-deploying the edpm node.
+Deploying OpenStack on OpenShift has 2 phases: Deploying the control plane and deploying the EDPM node.
 
-To deploy the control plane you'll need a `pull-secret` from
-`https://cloud.redhat.com/openshift/create/local`. This file must exist as
-`~/pull-secret`, or its location set in the `PULL_SECRET` env var.
+To deploy the control plane you'll need a `pull-secret` from `https://cloud.redhat.com/openshift/create/local`. This file must exist as `~/pull-secret`, or its location set in the `PULL_SECRET` env var.
 
 The targets for each of these phases:
 
@@ -123,6 +107,9 @@ The targets for each of these phases:
 make deploy_rhoso_controlplane
 make deploy_rhoso_dataplane
 ```
+
+> [!IMPORTANT] 
+> You can skip `Deploying RHOSO` if you already have an RHOSO cloud with Cinder service and EDPM nodes with PCI passthrough for NVIDIA GPUs.
 
 ## Deploying ShiftStack
 
@@ -179,7 +166,7 @@ spec:
             nvidia.com/gpu: 1
 EOF
 
-oc wait --for=condition=complete job/verify-cuda-vectoradd -n nvidia-gpu-operator --timeout=10m
+oc wait --for=condition=complete job/verify-cuda-vectoradd -n nvidia-gpu-operator --timeout=15m
 
 oc logs job/verify-cuda-vectoradd -n nvidia-gpu-operator
 ```
