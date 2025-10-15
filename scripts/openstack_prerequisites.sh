@@ -26,7 +26,7 @@ oc get secret rootca-public -n openstack -o json | jq -r '.data."ca.crt"' | base
 CERT_PATH=$(realpath ~/.config/openstack/rhoso.crt)
 yq eval ".clouds.default |= ({\"cacert\": \"${CERT_PATH}\"} + .)" -i ~/.config/openstack/clouds.yaml
 
-export OS_CLOUD=default
+export OS_CLOUD=${OS_CLOUD:-default}
 
 echo "Listing the OpenStack Endpoints"
 openstack endpoint list
