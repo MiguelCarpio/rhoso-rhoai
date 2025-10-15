@@ -7,6 +7,8 @@ EDPM_CPUS ?= 40
 EDPM_RAM ?= 160
 EDPM_DISK ?= 640
 
+OS_CLOUD ?= default
+
 PROXY_USER ?= rhoai
 PROXY_PASSWORD ?= 12345678
 
@@ -82,7 +84,7 @@ deploy_rhoso_dataplane: ensure_rhoso_rhelai ## Deploy an EDPM node with PCI pass
 .PHONY: deploy_shiftstack
 deploy_shiftstack: ensure_openshift_install ## Deploy OpenShift on RHOSO
 	$(info Creating OpenStack Networks, Flavors and Quotas)
-	@cd scripts && EDPM_CPUS=$(EDPM_CPUS) EDPM_RAM=$(EDPM_RAM) EDPM_DISK=$(EDPM_DISK) ./openstack_prerequisites.sh
+	@cd scripts && OS_CLOUD=$(OS_CLOUD) EDPM_CPUS=$(EDPM_CPUS) EDPM_RAM=$(EDPM_RAM) EDPM_DISK=$(EDPM_DISK) ./openstack_prerequisites.sh
 	$(info Setting firewall permissions)
 	@cd scripts && ./firewall_permissions.sh
 	$(info Deploying proxy server)
@@ -91,7 +93,7 @@ deploy_shiftstack: ensure_openshift_install ## Deploy OpenShift on RHOSO
 	@mkdir -p clusters/$(CLUSTER_NAME)
 ifeq (,$(wildcard $(OPENSHIFT_INSTALLCONFIG)))
 	$(info Making the OpenShift Cluster Install Configuration at clusters/$(CLUSTER_NAME)/install-config.yaml)
-	@cd scripts && PULL_SECRET="$(PULL_SECRET)" CLUSTER_NAME="$(CLUSTER_NAME)" PROXY_USER="$(PROXY_USER)" PROXY_PASSWORD="$(PROXY_PASSWORD)" SSH_PUB_KEY="$(SSH_PUB_KEY)" ./build_installconfig.sh
+	@cd scripts && OS_CLOUD=$(OS_CLOUD) PULL_SECRET="$(PULL_SECRET)" CLUSTER_NAME="$(CLUSTER_NAME)" PROXY_USER="$(PROXY_USER)" PROXY_PASSWORD="$(PROXY_PASSWORD)" SSH_PUB_KEY="$(SSH_PUB_KEY)" ./build_installconfig.sh
 else
 	@cp "$(OPENSHIFT_INSTALLCONFIG)" clusters/$(CLUSTER_NAME)/
 endif
@@ -114,8 +116,8 @@ deploy_rhoai: ensure_openshift_client ## Deploy OpenShift AI
 ifeq (,$(wildcard clusters/$(CLUSTER_NAME)/auth/kubeconfig))
 	$(error The kubeconfig is missing, it should be at clusters/$(CLUSTER_NAME)/auth/kubeconfig)
 endif
-	@cd scripts && CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./router_floating_ip.sh
-	@cd scripts && CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./install_rhoai_operators.sh
+	@cd scripts && OS_CLOUD=$(OS_CLOUD) CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./router_floating_ip.sh
+	@cd scripts && OS_CLOUD=$(OS_CLOUD) CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./install_rhoai_operators.sh
 
 ##@ DEPLOY MODEL SERVICE
 .PHONY: deploy_model_service
@@ -124,7 +126,7 @@ deploy_model_service: ensure_openshift_client ## Deploy and Verify Model Serving
 ifeq (,$(wildcard clusters/$(CLUSTER_NAME)/auth/kubeconfig))
 	$(error The kubeconfig is missing, it should be at clusters/$(CLUSTER_NAME)/auth/kubeconfig)
 endif
-	@cd scripts && CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./deploy_model_service.sh  
+	@cd scripts && OS_CLOUD=$(OS_CLOUD) CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./deploy_model_service.sh  
 	@echo "Getting model service metrics"
 ifeq (,$(wildcard gpu-validation)) ## Using MiguelCarpio/gpu-validation url branch until https://github.com/rhos-vaf/gpu-validation/pull/5 is merged
 	@git clone https://github.com/MiguelCarpio/gpu-validation.git

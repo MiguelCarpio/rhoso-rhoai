@@ -6,8 +6,8 @@ CLUSTER_NAME="${CLUSTER_NAME:-rhoai}"
 OPENSHIFT_CLIENT="${OPENSHIFT_CLIENT:-$(which oc)}"
 OPENSTACK_EXTERNAL_NETWORK="${OPENSTACK_EXTERNAL_NETWORK:-public}"
 
+export OS_CLOUD=${OS_CLOUD:-default}
 export KUBECONFIG="../clusters/${CLUSTER_NAME}/auth/kubeconfig"
-export OS_CLOUD=default
 
 ROUTER_WORKER=$(${OPENSHIFT_CLIENT} get pods -n openshift-ingress -o jsonpath='{.items[0].spec.nodeName}')
 
