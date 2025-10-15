@@ -1,3 +1,4 @@
+.DEFAULT_GOAL := help
 
 PULL_SECRET ?= $(HOME)/pull-secret
 SSH_PUB_KEY ?= $(HOME)/.ssh/id_rsa.pub
@@ -14,6 +15,18 @@ OPENSHIFT_INSTALL ?= $(shell which openshift-install 2>/dev/null || echo $(HOME)
 OPENSHIFT_CLIENT ?= $(shell which oc 2>/dev/null || echo $(HOME)/bin/oc)
 OPENSHIFT_INSTALLCONFIG ?=
 CLUSTER_NAME ?= rhoai
+
+.PHONY: help
+help: ## Display this help message
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+	@printf "\n\033[1mDeployment Workflow:\033[0m\n"
+	@printf "  1. make \033[36mdeploy_rhoso_controlplane\033[0m\n"
+	@printf "  2. make \033[36mdeploy_rhoso_dataplane\033[0m\n"
+	@printf "  3. make \033[36mdeploy_shiftstack\033[0m\n"
+	@printf "  4. make \033[36mdeploy_worker_gpu\033[0m\n"
+	@printf "  5. make \033[36mdeploy_rhoai\033[0m\n"
+	@printf "  6. make \033[36mdeploy_model_service\033[0m\n"
+	@printf "\n  \033[33mNote:\033[0m You can skip steps 1 and 2 if you already have an RHOSO cloud with Cinder service and EDPM nodes with PCI passthrough for NVIDIA GPUs.\n"
 
 ##@ PREREQUISITES
 .PHONY: ensure_rhoso_rhelai
@@ -57,7 +70,7 @@ prerequisites: ensure_rhoso_rhelai ## Installs basic tools & Validate GPU host
 
 ##@ DEPLOY RHOSO CONTROL PLANE
 .PHONY: deploy_rhoso_controlplane
-deploy_rhoso_controlplane: prerequisites ## Deploy OCP cluster using CRC, deploy OSP operators, and deploy the OpenStack Control Plane
+deploy_rhoso_controlplane: prerequisites ## Deploy OCP cluster using CRC, OSP operators and the OpenStack Control Plane
 	@make -C rhoso-rhelai/nested-passthrough DEPLOY_CINDER=true PULL_SECRET="$(PULL_SECRET)" deploy_controlplane
 
 ##@ DEPLOY RHOSO DATA PLANE
@@ -67,7 +80,7 @@ deploy_rhoso_dataplane: ensure_rhoso_rhelai ## Deploy an EDPM node with PCI pass
 
 ##@ DEPLOY SHIFTSTACK
 .PHONY: deploy_shiftstack
-deploy_shiftstack: ensure_openshift_install ## Deploy OpenShift on OpenStack
+deploy_shiftstack: ensure_openshift_install ## Deploy OpenShift on RHOSO
 	$(info Creating OpenStack Networks, Flavors and Quotas)
 	@cd scripts && EDPM_CPUS=$(EDPM_CPUS) EDPM_RAM=$(EDPM_RAM) EDPM_DISK=$(EDPM_DISK) ./openstack_prerequisites.sh
 	$(info Setting firewall permissions)
@@ -84,10 +97,10 @@ else
 endif
 	@$(OPENSHIFT_INSTALL) --log-level debug --dir clusters/$(CLUSTER_NAME) create cluster
 
-##@ DEPLOY GPU WORKER NODES
+##@ DEPLOY GPU WORKER NODE
 .PHONY: deploy_worker_gpu
-deploy_worker_gpu: ensure_openshift_client ## Create a new MachineSet for the GPU workers
-	$(info Creating a new MachineSet for the GPU workers)
+deploy_worker_gpu: ensure_openshift_client ## Create a new MachineSet for the GPU worker and scale it to 1
+	$(info Creating a new MachineSet for the GPU worker and scale it to 1)
 ifeq (,$(wildcard clusters/$(CLUSTER_NAME)/auth/kubeconfig))
 	$(error The kubeconfig is missing, it should be at clusters/$(CLUSTER_NAME)/auth/kubeconfig)
 endif
@@ -104,10 +117,10 @@ endif
 	@cd scripts && CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./router_floating_ip.sh
 	@cd scripts && CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./install_rhoai_operators.sh
 
-##@ DEPLOY MODEL SERVICE (INFERENCE CHAT)
+##@ DEPLOY MODEL SERVICE
 .PHONY: deploy_model_service
-deploy_model_service: ensure_openshift_client ## Deploy and Verify model serving with an inference chat and metrics
-	$(info Deploying and verifying model serving with an inference chat and metrics)
+deploy_model_service: ensure_openshift_client ## Deploy and Verify Model Serving for an Inference Chat Endpoint
+	$(info Deploying and verifying Model Serving for an Inference Chat Endpoint)
 ifeq (,$(wildcard clusters/$(CLUSTER_NAME)/auth/kubeconfig))
 	$(error The kubeconfig is missing, it should be at clusters/$(CLUSTER_NAME)/auth/kubeconfig)
 endif
@@ -122,8 +135,8 @@ endif
 
 ##@ CLEAN MODEL SERVICE
 .PHONY: clean_model_service
-clean_model_service: ensure_openshift_client ## Delete vllm-llama namespace
-	$(info Deleting vllm-llama namespace)
+clean_model_service: ensure_openshift_client ## Delete Model Service namespace
+	$(info Deleting the Model Service vllm-llama namespace)
 ifeq (,$(wildcard clusters/$(CLUSTER_NAME)/auth/kubeconfig))
 	$(error The kubeconfig is missing, it should be at clusters/$(CLUSTER_NAME)/auth/kubeconfig)
 endif
@@ -131,7 +144,7 @@ endif
 
 ##@ CLEAN SHIFTSTACK
 .PHONY: clean_shiftstack
-clean_shiftstack: ensure_openshift_install ## Clean OpenShift on RHOSO cluster
+clean_shiftstack: ensure_openshift_install ## Delete OpenShift on RHOSO
 	$(info Destroying the OpenShift cluster)
 ifeq (,$(wildcard clusters/$(CLUSTER_NAME)))
 	$(error Cluster directory clusters/$(CLUSTER_NAME) not found)
