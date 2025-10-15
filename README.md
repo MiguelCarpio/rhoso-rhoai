@@ -235,7 +235,7 @@ curl -k -s --show-error -f -X POST \
 
 # Customization
 
-There should be reasonable defaults, but you can still configuration a number of things via environmental variables when calling the make targets to customize the different phases.  This is a non-exhaustive list:
+There should be reasonable defaults, but you can still configure a number of things via environmental variables when calling the make targets to customize the different phases.  This is a non-exhaustive list:
 
 - For RHOSO Control Plane:
   - PULL_SECRET
@@ -252,9 +252,18 @@ There should be reasonable defaults, but you can still configuration a number of
   - PULL_SECRET
   - PROXY_USER
   - PROXY_PASSWORD
+  - PROXY_HOST
+  - PROXY_PORT
   - OPENSHIFT_INSTALL
   - OPENSHIFT_INSTALLCONFIG
   - SSH_PUB_KEY
+  - OPENSTACK_FLAVOR
+  - OPENSTACK_WORKER_FLAVOR
+  - OPENSTACK_WORKER_GPU_FLAVOR
+  - OPENSTACK_EXTERNAL_NETWORK
+  - EXTERNAL_DNS
+  - OPENSHIFT_NEEDS_PROXY
+  - IS_PROVIDED_CLOUD
 
 - For GPU Worker
   - CLUSTER_NAME
@@ -269,17 +278,24 @@ There should be reasonable defaults, but you can still configuration a number of
   - OS_CLOUD
   - CLUSTER_NAME
   - OPENSHIFT_CLIENT
-  
-For example, if we have more resources, and the pull secret is not located on the home directory, you may use something like this:
+
+## RHOSO
+If we have more resources, and the pull secret is not located in the home directory, you may use something like this:
 
 ```
 EDPM_CPUS=96 EDPM_RAM=256 PULL_SECRET=~/.config/openstack/pull-secret.txt make deploy_rhoso_dataplane
 ```
 
+## ShiftStack
 By default, the `deploy_shiftstack` target deploys OpenShift on `OS_CLOUD=default` cloud. If you want to deploy OpenShift on other clouds, you can set the cloud name with the env `OS_CLOUD` as:
 
 ```
-OS_CLOUD=custom-rhoso-cloud make deploy_shiftstack
+OS_CLOUD=openshift EXTERNAL_DNS=10.11.5.160 IS_PROVIDED_CLOUD=yes OPENSTACK_EXTERNAL_NETWORK=external make deploy_shiftstack
+```
+
+If the OpenSHift Installation needs a proxy connection to reach the OpenStack endpoints:
+```
+OS_CLOUD=openshift EXTERNAL_DNS=10.11.5.160 OPENSHIFT_NEEDS_PROXY=yes IS_PROVIDED_CLOUD=yes OPENSTACK_EXTERNAL_NETWORK=external PROXY_USER=rhoai PROXY_PASSWORD=12345678 PROXY_HOST=192.168.130.1 PROXY_PORT=3128 make deploy_shiftstack
 ```
 
 If you want to set the `openshift-install` location and change the default OpenShift cluster name:
@@ -288,7 +304,7 @@ If you want to set the `openshift-install` location and change the default OpenS
 OPENSHIFT_INSTALL=~/openshift-install CLUSTER_NAME=custom-ocp-name make deploy_shiftstack
 ```
 
-The `deploy_shiftstack` target uses the `~/.ssh/id_rsa.pub` SSH pub key for setting ssh access to the masters and bootstrap nodes. If you want to use a specific key for the OpenShift installation, you can set the custom key location with `SSH_PUB_KEY` env var. This key will be used for access to the bootstrap machine and debugging it in case of failure:
+The `deploy_shiftstack` target uses the `~/.ssh/id_rsa.pub` SSH pub key for setting SSH access to the masters and bootstrap nodes. If you want to use a specific key for the OpenShift installation, you can set the custom key location with `SSH_PUB_KEY` env var. This key will be used for access to the bootstrap machine and debugging it in case of failure:
 
 ```
 SSH_PUB_KEY=~/.ssh/custom_id_rsa.pub make deploy_shiftstack
