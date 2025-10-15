@@ -140,12 +140,12 @@ ifeq (,$(wildcard clusters/$(CLUSTER_NAME)/auth/kubeconfig))
 endif
 	@cd scripts && OS_CLOUD=$(OS_CLOUD) CLUSTER_NAME="$(CLUSTER_NAME)" OPENSHIFT_CLIENT="$(OPENSHIFT_CLIENT)" ./deploy_model_service.sh  
 	@echo "Getting model service metrics"
-ifeq (,$(wildcard gpu-validation)) ## Using MiguelCarpio/gpu-validation url branch until https://github.com/rhos-vaf/gpu-validation/pull/5 is merged
-	@git clone https://github.com/MiguelCarpio/gpu-validation.git
+ifeq (,$(wildcard gpu-validation))
+	@git clone https://github.com/rhos-vaf/gpu-validation
 else
-	@cd gpu-validation && git remote update && git checkout origin/url
+	@cd gpu-validation && git remote update && git checkout origin/main
 endif
-	@export KUBECONFIG=clusters/$(CLUSTER_NAME)/auth/kubeconfig && cd gpu-validation/gpu-validation/files/scripts/ && URL=https://$$(${OPENSHIFT_CLIENT} get route -n vllm-llama -o jsonpath='{.items[0].spec.host}') MODEL_NAME="RedHatAI/Llama-3.2-1B-Instruct-FP8" ./model_performance_check.sh
+	@cd gpu-validation/gpu-validation/files/scripts/ && URL=https://$$(KUBECONFIG=../../../../clusters/$(CLUSTER_NAME)/auth/kubeconfig $(OPENSHIFT_CLIENT) get route -n vllm-llama -o jsonpath='{.items[0].spec.host}') MODEL_NAME="RedHatAI/Llama-3.2-1B-Instruct-FP8" ./model_performance_check.sh
 
 ##@ CLEAN MODEL SERVICE
 .PHONY: clean_model_service
@@ -154,7 +154,7 @@ clean_model_service: ensure_openshift_client ## Delete Model Service namespace
 ifeq (,$(wildcard clusters/$(CLUSTER_NAME)/auth/kubeconfig))
 	$(error The kubeconfig is missing, it should be at clusters/$(CLUSTER_NAME)/auth/kubeconfig)
 endif
-	@export KUBECONFIG=clusters/$(CLUSTER_NAME)/auth/kubeconfig  && $(OPENSHIFT_CLIENT) delete project vllm-llama
+	@KUBECONFIG=clusters/$(CLUSTER_NAME)/auth/kubeconfig $(OPENSHIFT_CLIENT) delete project vllm-llama
 
 ##@ CLEAN SHIFTSTACK
 .PHONY: clean_shiftstack
