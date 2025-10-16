@@ -3,13 +3,19 @@
 PULL_SECRET ?= $(HOME)/pull-secret
 SSH_PUB_KEY ?= $(HOME)/.ssh/id_rsa.pub
 
+# OS_CLOUD: OpenStack cloud name from clouds.yaml
+# - Use "default" for local CRC/RHOSO deployment (sets up credentials, firewall, proxy)
+# - Use any other name for provided cloud (skips CRC setup)
 OS_CLOUD ?= default
 OPENSTACK_EXTERNAL_NETWORK ?= public
 EDPM_CPUS ?= 40
 EDPM_RAM ?= 160
 EDPM_DISK ?= 640
 
-OPENSHIFT_NEEDS_PROXY ?= 
+# OPENSHIFT_NEEDS_PROXY: Whether OpenShift cluster needs proxy to reach OpenStack endpoint
+# - Leave empty to auto-detect based on OS_CLOUD (yes for CRC, no for provided cloud)
+# - Set to "yes" or "no" to override
+OPENSHIFT_NEEDS_PROXY ?=
 PROXY_USER ?= rhoai
 PROXY_PASSWORD ?= 12345678
 PROXY_HOST ?= 192.168.130.1
@@ -20,6 +26,7 @@ OPENSHIFT_INSTALL ?= $(shell which openshift-install 2>/dev/null || echo $(HOME)
 OPENSHIFT_CLIENT ?= $(shell which oc 2>/dev/null || echo $(HOME)/bin/oc)
 OPENSHIFT_INSTALLCONFIG ?=
 CLUSTER_NAME ?= rhoai
+BASE_DOMAIN ?= shiftstack.test
 EXTERNAL_DNS ?= 192.168.122.1
 OPENSTACK_FLAVOR ?= master
 OPENSTACK_WORKER_FLAVOR ?= worker
@@ -104,7 +111,7 @@ endif
 	@mkdir -p clusters/$(CLUSTER_NAME)
 ifeq (,$(wildcard $(OPENSHIFT_INSTALLCONFIG)))
 	$(info Making the OpenShift Cluster Install Configuration at clusters/$(CLUSTER_NAME)/install-config.yaml)
-	@cd scripts && OPENSHIFT_NEEDS_PROXY=$(OPENSHIFT_NEEDS_PROXY) OS_CLOUD=$(OS_CLOUD) OPENSTACK_EXTERNAL_NETWORK=$(OPENSTACK_EXTERNAL_NETWORK) PULL_SECRET="$(PULL_SECRET)" CLUSTER_NAME="$(CLUSTER_NAME)" PROXY_USER="$(PROXY_USER)" PROXY_PASSWORD="$(PROXY_PASSWORD)" PROXY_HOST="$(PROXY_HOST)" PROXY_PORT="$(PROXY_PORT)" SSH_PUB_KEY="$(SSH_PUB_KEY)" EXTERNAL_DNS="$(EXTERNAL_DNS)" OPENSTACK_FLAVOR=$(OPENSTACK_FLAVOR) OPENSTACK_WORKER_FLAVOR=$(OPENSTACK_WORKER_FLAVOR) OPENSTACK_WORKER_GPU_FLAVOR=$(OPENSTACK_WORKER_GPU_FLAVOR) ./build_installconfig.sh
+	@cd scripts && BASE_DOMAIN=$(BASE_DOMAIN) OPENSHIFT_NEEDS_PROXY=$(OPENSHIFT_NEEDS_PROXY) OS_CLOUD=$(OS_CLOUD) OPENSTACK_EXTERNAL_NETWORK=$(OPENSTACK_EXTERNAL_NETWORK) PULL_SECRET="$(PULL_SECRET)" CLUSTER_NAME="$(CLUSTER_NAME)" PROXY_USER="$(PROXY_USER)" PROXY_PASSWORD="$(PROXY_PASSWORD)" PROXY_HOST="$(PROXY_HOST)" PROXY_PORT="$(PROXY_PORT)" SSH_PUB_KEY="$(SSH_PUB_KEY)" EXTERNAL_DNS="$(EXTERNAL_DNS)" OPENSTACK_FLAVOR=$(OPENSTACK_FLAVOR) OPENSTACK_WORKER_FLAVOR=$(OPENSTACK_WORKER_FLAVOR) OPENSTACK_WORKER_GPU_FLAVOR=$(OPENSTACK_WORKER_GPU_FLAVOR) ./build_installconfig.sh
 else
 	@cp "$(OPENSHIFT_INSTALLCONFIG)" clusters/$(CLUSTER_NAME)/
 endif
