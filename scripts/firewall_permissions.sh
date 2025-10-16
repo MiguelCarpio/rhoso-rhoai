@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 sudo firewall-cmd --zone=libvirt --add-service=http --permanent
 sudo firewall-cmd --zone=libvirt --add-service=https --permanent

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 CLUSTER_NAME="${CLUSTER_NAME:-rhoai}"
 OPENSHIFT_CLIENT="${OPENSHIFT_CLIENT:-$(which oc)}"

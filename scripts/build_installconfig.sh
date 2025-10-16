@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 export OS_CLOUD="${OS_CLOUD:-default}"
 OPENSHIFT_NEEDS_PROXY="${OPENSHIFT_NEEDS_PROXY:-$(if [ "${OS_CLOUD}" != "default" ]; then echo "no"; else echo "yes"; fi)}"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 EDPM_CPUS="${EDPM_CPUS:-40}"
 EDPM_RAM="${EDPM_RAM:-160}"

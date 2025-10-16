@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 PROXY_USER="${PROXY_USER:-rhoai}"
 PROXY_PASSWORD="${PROXY_PASSWORD:-12345678}"
