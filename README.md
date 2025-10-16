@@ -113,7 +113,7 @@ make deploy_rhoso_dataplane
 
 ## Deploying ShiftStack
 
-To deploy OpenShift on RHOSO, you'll need the `pull-secret`, the `openshift-install` and the `oc` client. The `pull-secret` file must exist as `~/pull-secret`, the OpenShift installer and client will be searched in `$PATH`. However, you can set the `PULL_SECRET` env var with the `pull-secret` location. Regarding the `openshift-install` and `oc`, you can set the OpenShift release version like `OPENSHIFT_RELEASE=stable-4.18`, and the installer and client will be downloaded into `~/bin/`. If you already have the installer and client, you can set the `OPENSHIFT_INSTALL` and `OPENSHIFT_CLIENT` env vars with the `openshift-install` and `oc` location. Remember that if you want to deploy a CI or nightly OCP Release, you can get the installer and client from https://amd64.ocp.releases.ci.openshift.org/, choose a [supported OCP version](https://access.redhat.com/support/policy/updates/rhoai-sm/lifecycle).
+To deploy OpenShift on RHOSO, you'll need the `pull-secret`, the `openshift-install` and the `oc` client. The `pull-secret` file must exist as `~/pull-secret`, the OpenShift installer and client will be searched in `$PATH`. However, you can set the `PULL_SECRET` env var with the `pull-secret` location. Regarding the `openshift-install` and `oc`, you can set the OpenShift release version like `OPENSHIFT_RELEASE=stable-4.18`, and the installer and client will be downloaded into `~/bin/`. If you already have the installer and client, you can set the `OPENSHIFT_INSTALL` and `OPENSHIFT_CLIENT` env vars with the `openshift-install` and `oc` location. Remember that if you want to deploy a CI or nightly OpenShift Release, you can get the installer and client from https://amd64.ocp.releases.ci.openshift.org/, choose a [supported OCP version](https://access.redhat.com/support/policy/updates/rhoai-sm/lifecycle).
 
 ```bash
 make deploy_shiftstack
@@ -255,15 +255,14 @@ There should be reasonable defaults, but you can still configure a number of thi
   - PROXY_PASSWORD
   - PROXY_HOST
   - PROXY_PORT
+  - OPENSHIFT_NEEDS_PROXY
   - OPENSHIFT_INSTALL
-  - OPENSHIFT_INSTALLCONFIG
-  - SSH_PUB_KEY
   - OPENSTACK_FLAVOR
   - OPENSTACK_WORKER_FLAVOR
   - OPENSTACK_WORKER_GPU_FLAVOR
   - OPENSTACK_EXTERNAL_NETWORK
   - EXTERNAL_DNS
-  - OPENSHIFT_NEEDS_PROXY
+  - SSH_PUB_KEY
 
 - For GPU Worker
   - CLUSTER_NAME
@@ -287,26 +286,72 @@ EDPM_CPUS=96 EDPM_RAM=256 PULL_SECRET=~/.config/openstack/pull-secret.txt make d
 ```
 
 ## ShiftStack
-By default, the `deploy_shiftstack` target deploys OpenShift on `OS_CLOUD=default` cloud and retrieves the OpenStack credentials from the CRC OCP OpenStack namespace. If you want to deploy OpenShift on other clouds, you can set the cloud name with the env `OS_CLOUD` as:
 
+The `deploy_shiftstack` target supports two deployment scenarios based on the `OS_CLOUD` variable:
+
+### Scenario 1: Local CRC/RHOSO Deployment (Default)
+
+When `OS_CLOUD=default` (the default value), the deployment:
+- Retrieves OpenStack credentials from CRC's OpenStack namespace
+- Sets up firewall permissions for the libvirt zone
+- Deploys a local Squid proxy server
+- Configures OpenShift to use the proxy to reach OpenStack endpoints
+- Creates the external network and subnet
+
+**Example: Default deployment**
+```bash
+CLUSTER_NAME=rhos-vaf BASE_DOMAIN=redhat.com make deploy_shiftstack
 ```
+
+### Scenario 2: Using a Provided OpenStack Cloud
+
+When `OS_CLOUD` is set to **any value other than "default"**, the deployment:
+- Uses credentials from your `~/.config/openstack/clouds.yaml` file
+- Skips CRC credential retrieval
+- Skips firewall and proxy server setup
+- Validates that the external network exists (doesn't create it)
+- Assumes direct network connectivity (no proxy by default)
+
+**Example: Deploy on a provided cloud**
+```bash
 OS_CLOUD=openshift EXTERNAL_DNS=10.11.5.160 OPENSTACK_EXTERNAL_NETWORK=external make deploy_shiftstack
 ```
 
-If the OpenSHift Installation needs a proxy connection to reach the OpenStack endpoints:
-```
-OS_CLOUD=openshift EXTERNAL_DNS=10.11.5.160 OPENSHIFT_NEEDS_PROXY=yes OPENSTACK_EXTERNAL_NETWORK=external PROXY_USER=rhoai PROXY_PASSWORD=12345678 PROXY_HOST=192.168.130.1 PROXY_PORT=3128 make deploy_shiftstack
+### Proxy Configuration
+
+The `OPENSHIFT_NEEDS_PROXY` variable controls whether OpenShift uses a proxy to reach the OpenStack API:
+
+- **Auto-detection (default behavior)**:
+  - `OS_CLOUD=default` → proxy enabled (required for CRC)
+  - `OS_CLOUD≠default` → proxy disabled (assumes direct connectivity)
+
+- **Manual override**: Set `OPENSHIFT_NEEDS_PROXY=yes` or `OPENSHIFT_NEEDS_PROXY=no` to override auto-detection
+
+**Example: Provided cloud that requires proxy**
+```bash
+OS_CLOUD=openshift EXTERNAL_DNS=10.11.5.160 OPENSHIFT_NEEDS_PROXY=yes \
+  OPENSTACK_EXTERNAL_NETWORK=external PROXY_USER=rhoai PROXY_PASSWORD=12345678 \
+  PROXY_HOST=192.168.130.1 PROXY_PORT=3128 make deploy_shiftstack
 ```
 
-If you want to set the `openshift-install` location and change the default OpenShift cluster name:
+### Additional Customization
 
-```
-OPENSHIFT_INSTALL=~/openshift-install CLUSTER_NAME=custom-ocp-name make deploy_shiftstack
+**Custom OpenShift installer**
+```bash
+OPENSHIFT_INSTALL=~/openshift-install make deploy_shiftstack
 ```
 
-The `deploy_shiftstack` target uses the `~/.ssh/id_rsa.pub` SSH pub key for setting SSH access to the masters and bootstrap nodes. If you want to use a specific key for the OpenShift installation, you can set the custom key location with `SSH_PUB_KEY` env var. This key will be used for access to the bootstrap machine and debugging it in case of failure:
+**Custom SSH key for cluster access**
 
-```
+The `deploy_shiftstack` target uses `~/.ssh/id_rsa.pub` by default for SSH access to masters and bootstrap nodes. You can specify a custom key:
+
+```bash
 SSH_PUB_KEY=~/.ssh/custom_id_rsa.pub make deploy_shiftstack
-ssh -i ~/.ssh/custom_id_rsa.pub core@${BOOTSTRAP_FLOATING_IP}
+ssh -i ~/.ssh/custom_id_rsa core@${BOOTSTRAP_FLOATING_IP}
+```
+
+**Custom OpenStack flavors**
+```bash
+OPENSTACK_FLAVOR=m1.master OPENSTACK_WORKER_FLAVOR=m1.worker \
+  OPENSTACK_WORKER_GPU_FLAVOR=m1.gpu make deploy_shiftstack
 ```
