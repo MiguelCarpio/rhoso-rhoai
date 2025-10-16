@@ -7,31 +7,11 @@ EDPM_RAM="${EDPM_RAM:-160}"
 EDPM_RAM_MB=$((${EDPM_RAM} * 1024))
 EDPM_DISK="${EDPM_DISK:-640}"
 OPENSTACK_EXTERNAL_NETWORK="${OPENSTACK_EXTERNAL_NETWORK:-public}"
-IS_PROVIDED_CLOUD="${IS_PROVIDED_CLOUD:-no}"
 OPENSTACK_FLAVOR="${OPENSTACK_FLAVOR:-master}"
 OPENSTACK_WORKER_FLAVOR="${OPENSTACK_WORKER_FLAVOR:-worker}"
 OPENSTACK_WORKER_GPU_FLAVOR="${OPENSTACK_WORKER_GPU_FLAVOR:-worker_gpu}"
 
 export OS_CLOUD="${OS_CLOUD:-default}"
-
-# Validate and normalize IS_PROVIDED_CLOUD to yes/no
-validate_is_provided_cloud() {
-    local value=$(echo "${IS_PROVIDED_CLOUD}" | tr '[:upper:]' '[:lower:]')
-
-    case "${value}" in
-        yes|y)
-            IS_PROVIDED_CLOUD="yes"
-            ;;
-        no|n)
-            IS_PROVIDED_CLOUD="no"
-            ;;
-        *)
-            echo "ERROR: IS_PROVIDED_CLOUD must be 'yes' or 'no' (got: '${IS_PROVIDED_CLOUD}')"
-            echo "Valid values: yes, YES, y, Y, no, NO, n, N"
-            exit 1
-            ;;
-    esac
-}
 
 # Install OpenStack CLI if not present
 install_openstack_cli() {
@@ -44,8 +24,8 @@ install_openstack_cli() {
 
 # Setup OpenStack credentials from CRC/RHOSO
 setup_credentials() {
-    if [ "${IS_PROVIDED_CLOUD}" = "no" ]; then
-        echo "Getting the OpenStack Credentials from CRC"
+    if [ "${OS_CLOUD}" = "default" ]; then
+        echo "Getting the OpenStack Credentials from the CRC OCP OpenStack namespace"
 
         eval $(crc oc-env)
         oc login -u kubeadmin -p 12345678 https://api.crc.testing:6443
@@ -58,7 +38,7 @@ setup_credentials() {
         CERT_PATH=$(realpath ~/.config/openstack/rhoso.crt)
         yq eval ".clouds.default |= ({\"cacert\": \"${CERT_PATH}\"} + .)" -i ~/.config/openstack/clouds.yaml
     else
-        echo "Using provided cloud - skipping credential setup"
+        echo "Using provided cloud (OS_CLOUD=${OS_CLOUD}) - skipping credential setup"
     fi
 }
 
@@ -67,8 +47,8 @@ setup_networks() {
     echo "Creating the Networks and Security Groups"
 
     # Setup external network based on cloud type
-    if [ "${IS_PROVIDED_CLOUD}" = "yes" ]; then
-        echo "Using provided cloud - validating external network exists..."
+    if [ "${OS_CLOUD}" != "default" ]; then
+        echo "Using provided cloud (OS_CLOUD=${OS_CLOUD}) - validating external network exists..."
         openstack network show "${OPENSTACK_EXTERNAL_NETWORK}" || {
             echo "ERROR: External network '${OPENSTACK_EXTERNAL_NETWORK}' does not exist in provided cloud."
             echo "Please create it or set OPENSTACK_EXTERNAL_NETWORK to an existing network."
@@ -130,7 +110,6 @@ setup_quotas() {
     openstack quota set --gigabytes "${EDPM_DISK}" || true
 }
 
-validate_is_provided_cloud
 install_openstack_cli
 setup_credentials
 setup_networks

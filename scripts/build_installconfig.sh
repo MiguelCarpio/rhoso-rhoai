@@ -2,7 +2,8 @@
 
 set -ex
 
-OPENSHIFT_NEEDS_PROXY="${OPENSHIFT_NEEDS_PROXY:-$(if [ "${IS_PROVIDED_CLOUD}" = "yes" ]; then echo "no"; else echo "yes"; fi)}"
+export OS_CLOUD="${OS_CLOUD:-default}"
+OPENSHIFT_NEEDS_PROXY="${OPENSHIFT_NEEDS_PROXY:-$(if [ "${OS_CLOUD}" != "default" ]; then echo "no"; else echo "yes"; fi)}"
 
 # Validate and normalize OPENSHIFT_NEEDS_PROXY to yes/no
 validate_openshift_needs_proxy() {
@@ -40,8 +41,6 @@ OPENSTACK_FLAVOR="${OPENSTACK_FLAVOR:-master}"
 OPENSTACK_WORKER_FLAVOR="${OPENSTACK_WORKER_FLAVOR:-worker}"
 OPENSTACK_EXTERNAL_NETWORK="${OPENSTACK_EXTERNAL_NETWORK:-public}"
 EXTERNAL_DNS="${EXTERNAL_DNS:-192.168.122.1}"
-
-export OS_CLOUD="${OS_CLOUD:-default}"
 
 ARTIFACT_DIR="../clusters/${CLUSTER_NAME}"
 INSTALL_CONFIG="${ARTIFACT_DIR}/install-config.yaml"

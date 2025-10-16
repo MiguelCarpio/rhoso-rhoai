@@ -263,7 +263,6 @@ There should be reasonable defaults, but you can still configure a number of thi
   - OPENSTACK_EXTERNAL_NETWORK
   - EXTERNAL_DNS
   - OPENSHIFT_NEEDS_PROXY
-  - IS_PROVIDED_CLOUD
 
 - For GPU Worker
   - CLUSTER_NAME
@@ -287,15 +286,15 @@ EDPM_CPUS=96 EDPM_RAM=256 PULL_SECRET=~/.config/openstack/pull-secret.txt make d
 ```
 
 ## ShiftStack
-By default, the `deploy_shiftstack` target deploys OpenShift on `OS_CLOUD=default` cloud. If you want to deploy OpenShift on other clouds, you can set the cloud name with the env `OS_CLOUD` as:
+By default, the `deploy_shiftstack` target deploys OpenShift on `OS_CLOUD=default` cloud and retrieves the OpenStack credentials from the CRC OCP OpenStack namespace. If you want to deploy OpenShift on other clouds, you can set the cloud name with the env `OS_CLOUD` as:
 
 ```
-OS_CLOUD=openshift EXTERNAL_DNS=10.11.5.160 IS_PROVIDED_CLOUD=yes OPENSTACK_EXTERNAL_NETWORK=external make deploy_shiftstack
+OS_CLOUD=openshift EXTERNAL_DNS=10.11.5.160 OPENSTACK_EXTERNAL_NETWORK=external make deploy_shiftstack
 ```
 
 If the OpenSHift Installation needs a proxy connection to reach the OpenStack endpoints:
 ```
-OS_CLOUD=openshift EXTERNAL_DNS=10.11.5.160 OPENSHIFT_NEEDS_PROXY=yes IS_PROVIDED_CLOUD=yes OPENSTACK_EXTERNAL_NETWORK=external PROXY_USER=rhoai PROXY_PASSWORD=12345678 PROXY_HOST=192.168.130.1 PROXY_PORT=3128 make deploy_shiftstack
+OS_CLOUD=openshift EXTERNAL_DNS=10.11.5.160 OPENSHIFT_NEEDS_PROXY=yes OPENSTACK_EXTERNAL_NETWORK=external PROXY_USER=rhoai PROXY_PASSWORD=12345678 PROXY_HOST=192.168.130.1 PROXY_PORT=3128 make deploy_shiftstack
 ```
 
 If you want to set the `openshift-install` location and change the default OpenShift cluster name:
