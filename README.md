@@ -249,6 +249,7 @@ There should be reasonable defaults, but you can still configure a number of thi
 - For ShiftStack
   - OS_CLOUD
   - CLUSTER_NAME
+  - BASE_DOMAIN
   - PULL_SECRET
   - PROXY_USER
   - PROXY_PASSWORD
