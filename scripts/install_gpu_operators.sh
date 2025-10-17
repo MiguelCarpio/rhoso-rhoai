@@ -154,7 +154,8 @@ echo "  ✓ GPU node labeled: ${GPU_NODE}"
 echo ""
 
 echo "Creating a GPU operator verification job"
-cat << EOF | ${OPENSHIFT_CLIENT} apply -f -
+echo "Job:"
+cat << EOF | tee /dev/tty | ${OPENSHIFT_CLIENT} apply -f -
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -175,6 +176,7 @@ spec:
           limits:
             nvidia.com/gpu: 1
 EOF
+echo ""
 
 ${OPENSHIFT_CLIENT} wait --for=condition=complete job/verify-cuda-vectoradd -n nvidia-gpu-operator --timeout=15m
 
