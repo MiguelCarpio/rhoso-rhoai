@@ -180,6 +180,7 @@ ${OPENSHIFT_CLIENT} wait --for=condition=complete job/verify-cuda-vectoradd -n n
 
 echo "CUDA verification job output:"
 CUDA_OUTPUT=$(${OPENSHIFT_CLIENT} logs job/verify-cuda-vectoradd -n nvidia-gpu-operator)
+echo "$CUDA_OUTPUT"
 echo ""
 if echo "$CUDA_OUTPUT" | grep -q "Test PASSED"; then
   echo "  ✓ CUDA verification test PASSED"
