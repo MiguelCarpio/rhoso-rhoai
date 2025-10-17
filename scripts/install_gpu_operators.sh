@@ -26,7 +26,8 @@ echo "[2/8] Deploying NFD (Node Feature Discovery) Operator..."
 
 ${OPENSHIFT_CLIENT} create namespace openshift-nfd || true
 
-cat << EOF | ${OPENSHIFT_CLIENT} apply -f -
+echo "OperatorGroup:"
+cat << EOF | tee /dev/tty | ${OPENSHIFT_CLIENT} apply -f -
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
@@ -36,8 +37,10 @@ spec:
   targetNamespaces:
   - openshift-nfd
 EOF
+echo ""
 
-cat << EOF | ${OPENSHIFT_CLIENT} apply -f -
+echo "Subscription:"
+cat << EOF | tee /dev/tty | ${OPENSHIFT_CLIENT} apply -f -
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -50,7 +53,6 @@ spec:
   source: redhat-operators
   sourceNamespace: openshift-marketplace
 EOF
-
 echo ""
 
 echo "[3/8] Waiting for NFD Operator deployment (timeout: 5m)..."
@@ -59,7 +61,8 @@ ${OPENSHIFT_CLIENT} wait --for=condition=Available --timeout=5m deployment/nfd-c
 echo ""
 
 echo "[4/8] Creating NFD instance..."
-cat << EOF | ${OPENSHIFT_CLIENT} apply -f -
+echo "NodeFeatureDiscovery:"
+cat << EOF | tee /dev/tty | ${OPENSHIFT_CLIENT} apply -f -
 apiVersion: nfd.openshift.io/v1
 kind: NodeFeatureDiscovery
 metadata:
@@ -67,7 +70,6 @@ metadata:
   namespace: openshift-nfd
 spec: {}
 EOF
-
 echo ""
 
 echo "[5/8] Waiting for NFD pods to be ready (timeout: 5m)..."
@@ -80,7 +82,8 @@ echo "[6/8] Deploying NVIDIA GPU Operator..."
 
 ${OPENSHIFT_CLIENT} create namespace nvidia-gpu-operator || true
 
-cat << EOF | ${OPENSHIFT_CLIENT} apply -f -
+echo "OperatorGroup:"
+cat << EOF | tee /dev/tty | ${OPENSHIFT_CLIENT} apply -f -
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
@@ -90,12 +93,14 @@ spec:
   targetNamespaces:
   - nvidia-gpu-operator
 EOF
+echo ""
 
 NVIDIA_CHANNEL=`${OPENSHIFT_CLIENT} get packagemanifest gpu-operator-certified -n openshift-marketplace -o jsonpath='{.status.defaultChannel}'`
 
 NVIDIA_STARTINGCSV=`${OPENSHIFT_CLIENT} get packagemanifest gpu-operator-certified -n openshift-marketplace -o jsonpath='{.status.channels[?(@.name=="'"${NVIDIA_CHANNEL}"'")].currentCSV}{"\n"}'`
 
-cat << EOF | ${OPENSHIFT_CLIENT} apply -f -
+echo "Subscription:"
+cat << EOF | tee /dev/tty | ${OPENSHIFT_CLIENT} apply -f -
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -109,7 +114,6 @@ spec:
   sourceNamespace: openshift-marketplace
   startingCSV: ${NVIDIA_STARTINGCSV}
 EOF
-
 echo "  ✓ NVIDIA GPU Operator subscription created (channel: ${NVIDIA_CHANNEL})"
 echo ""
 
@@ -120,7 +124,8 @@ ${OPENSHIFT_CLIENT} wait --for=jsonpath='{.status.phase}'=Succeeded --timeout=5m
 echo ""
 
 echo "[8/8] Configuring GPU ClusterPolicy and verifying installation..."
-cat << EOF | ${OPENSHIFT_CLIENT} apply -f -
+echo "ClusterPolicy:"
+cat << EOF | tee /dev/tty | ${OPENSHIFT_CLIENT} apply -f -
 apiVersion: nvidia.com/v1
 kind: ClusterPolicy
 metadata:
@@ -136,8 +141,8 @@ spec:
   operator: {}
   toolkit: {}
 EOF
-
 echo ""
+
 echo "  ⏳ Waiting for ClusterPolicy to be ready (timeout: 30m, this may take a while)..."
 ${OPENSHIFT_CLIENT} wait ClusterPolicy gpu-cluster-policy  -n nvidia-gpu-operator --for condition=Ready=True --timeout=30m
 echo "  ✓ GPU ClusterPolicy is ready"
