@@ -97,20 +97,20 @@ deploy_rhoso_dataplane: ensure_rhoso_rhelai ## Deploy an EDPM node with PCI pass
 ##@ DEPLOY SHIFTSTACK
 .PHONY: deploy_shiftstack
 deploy_shiftstack: ensure_openshift_install ## Deploy OpenShift on RHOSO
-	$(info Creating OpenStack Networks, Flavors and Quotas)
+# Creating OpenStack Networks, Flavors and Quotas
 	@cd scripts && OS_CLOUD=$(OS_CLOUD) OPENSTACK_EXTERNAL_NETWORK=$(OPENSTACK_EXTERNAL_NETWORK) EDPM_CPUS=$(EDPM_CPUS) EDPM_RAM=$(EDPM_RAM) EDPM_DISK=$(EDPM_DISK) OPENSTACK_FLAVOR=$(OPENSTACK_FLAVOR) OPENSTACK_WORKER_FLAVOR=$(OPENSTACK_WORKER_FLAVOR) OPENSTACK_WORKER_GPU_FLAVOR=$(OPENSTACK_WORKER_GPU_FLAVOR) ./openstack_prerequisites.sh
 ifneq ($(OS_CLOUD),default)
-	$(info Skipping firewall and proxy server setup - using provided cloud (OS_CLOUD=$(OS_CLOUD)))
+# Skipping firewall and proxy server setup - using provided cloud
 else
-	$(info Setting firewall permissions)
+# Setting firewall permissions
 	@cd scripts && ./firewall_permissions.sh
-	$(info Deploying proxy server)
+# Deploying proxy server
 	@cd scripts && PROXY_USER="$(PROXY_USER)" PROXY_PASSWORD="$(PROXY_PASSWORD)" ./proxy_setup.sh
 endif
-	$(info Making the OpenShift installation directory at clusters/$(CLUSTER_NAME))
+# Making the OpenShift installation directory at clusters/$(CLUSTER_NAME)
 	@mkdir -p clusters/$(CLUSTER_NAME)
 ifeq (,$(wildcard $(OPENSHIFT_INSTALLCONFIG)))
-	$(info Making the OpenShift Cluster Install Configuration at clusters/$(CLUSTER_NAME)/install-config.yaml)
+# Making the OpenShift Cluster Install Configuration at clusters/$(CLUSTER_NAME)/install-config.yaml
 	@cd scripts && BASE_DOMAIN=$(BASE_DOMAIN) OPENSHIFT_NEEDS_PROXY=$(OPENSHIFT_NEEDS_PROXY) OS_CLOUD=$(OS_CLOUD) OPENSTACK_EXTERNAL_NETWORK=$(OPENSTACK_EXTERNAL_NETWORK) PULL_SECRET="$(PULL_SECRET)" CLUSTER_NAME="$(CLUSTER_NAME)" PROXY_USER="$(PROXY_USER)" PROXY_PASSWORD="$(PROXY_PASSWORD)" PROXY_HOST="$(PROXY_HOST)" PROXY_PORT="$(PROXY_PORT)" SSH_PUB_KEY="$(SSH_PUB_KEY)" EXTERNAL_DNS="$(EXTERNAL_DNS)" OPENSTACK_FLAVOR=$(OPENSTACK_FLAVOR) OPENSTACK_WORKER_FLAVOR=$(OPENSTACK_WORKER_FLAVOR) OPENSTACK_WORKER_GPU_FLAVOR=$(OPENSTACK_WORKER_GPU_FLAVOR) ./build_installconfig.sh
 else
 	@cp "$(OPENSHIFT_INSTALLCONFIG)" clusters/$(CLUSTER_NAME)/

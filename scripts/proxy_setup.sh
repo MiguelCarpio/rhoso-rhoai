@@ -1,10 +1,11 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 PROXY_USER="${PROXY_USER:-rhoai}"
 PROXY_PASSWORD="${PROXY_PASSWORD:-12345678}"
 
+echo "Setting up Squid proxy server..."
 sudo tee /etc/squid/squid.conf > /dev/null << EOF
 acl localnet src all
 acl Safe_ports port 80
@@ -28,4 +29,11 @@ sudo htpasswd -bBc /etc/squid/htpasswd "$PROXY_USER" "$PROXY_PASSWORD"
 
 sudo systemctl start squid
 
-sudo systemctl status squid --no-pager || exit 1
+if sudo systemctl is-active --quiet squid; then
+    echo "  ✓ Squid proxy server started and running (user: ${PROXY_USER}, port: 3128)"
+else
+    echo "  ✗ Failed to start Squid proxy server"
+    sudo systemctl status squid --no-pager
+    exit 1
+fi
+echo ""
