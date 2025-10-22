@@ -176,7 +176,7 @@ spec:
       restartPolicy: OnFailure
       containers:
       - name: cuda-vectoradd
-        image: "nvidia/samples:vectoradd-cuda11.2.1"
+        image: "nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda11.7.1-ubi8"
         resources:
           limits:
             nvidia.com/gpu: 1
